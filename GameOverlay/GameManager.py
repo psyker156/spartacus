@@ -102,6 +102,14 @@ class GameManager:
                                          loadAddress=p2Address,
                                          binaryPath=p2File.split(".")[0] + ".bin")
 
+        # Just to make sure no player is trying to destroy the game with a big
+        # empty battle program
+        if p1Size > 0xFFF or p2Size > 0xFFF:
+            print("{} is {} bytes".format(p1Name, hex(p1Size)))
+            print("{} is {} bytes".format(p2Name, hex(p2Size)))
+            print("Over 0xFFF = disqualified!!")
+            quit()
+			
         # Insert info into context bank before player can play
         # Could have hidden this away in a method but feels clearer this way
         self.p1ContextBank = []
