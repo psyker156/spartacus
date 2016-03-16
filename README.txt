@@ -17,6 +17,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 
 NOTE:
+This project has been tested using python 3.4 and 3.5
+
 All documentation is available in the "Documentation" folder.
 Please note that some code examples are available in the "testFiles"
 folder. Also note, for those who like code coloring, a Notepad++
