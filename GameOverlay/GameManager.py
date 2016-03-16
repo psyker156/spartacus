@@ -24,6 +24,7 @@ from CapuaEnvironment.Capua import Capua
 import CapuaEnvironment.IOComponent.MemoryMappedDevices.SpartacusThreadMultiplexer.SpartacusThreadMultiplexer as STMP
 from Configuration.Configuration import MEMORY_START_AT, MEMORY_END_AT
 from GameOverlay.Arena import Arena
+from GameOverlay.GameConfiguration import MAX_PROGRAM_SIZE
 from ToolChain.Assembler.Assembler import Assembler
 from ToolChain.Debugger.Debugger import Debugger  # Do not delete... There is a commented out line in this file that allows to plug in the debugger
 from ToolChain.Linker.StaticFlatLinker import StaticFlatLinker
@@ -35,7 +36,7 @@ __author__ = "CSE"
 __copyright__ = "Copyright 2015, CSE"
 __credits__ = ["CSE"]
 __license__ = "GPL"
-__version__ = "1.3"
+__version__ = "1.4"
 __maintainer__ = "CSE"
 __status__ = "Dev"
 
@@ -104,12 +105,12 @@ class GameManager:
 
         # Just to make sure no player is trying to destroy the game with a big
         # empty battle program
-        if p1Size > 0xFFF or p2Size > 0xFFF:
+        if p1Size > MAX_PROGRAM_SIZE or p2Size > MAX_PROGRAM_SIZE:
             print("{} is {} bytes".format(p1Name, hex(p1Size)))
             print("{} is {} bytes".format(p2Name, hex(p2Size)))
-            print("Over 0xFFF = disqualified!!")
+            print("Over {} = disqualified!!".format(hex(MAX_PROGRAM_SIZE)))
             quit()
-			
+
         # Insert info into context bank before player can play
         # Could have hidden this away in a method but feels clearer this way
         self.p1ContextBank = []
@@ -150,12 +151,12 @@ class GameManager:
         have 4k of contiguous memory following the address.
         :return:
         """
-        p1Address = random.randint(MEMORY_START_AT, MEMORY_END_AT - 0xFFF)  # 0xFFF because programs are guaranteed 4k of memory
-        p1AddMax = p1Address + 0xFFF
+        p1Address = random.randint(MEMORY_START_AT, MEMORY_END_AT - MAX_PROGRAM_SIZE)  # See GameConfiguration
+        p1AddMax = p1Address + MAX_PROGRAM_SIZE
         p2Address = p1Address  # This forces the loop and avoid code duplication
 
-        while p2Address in range(p1Address, p1AddMax) or (p2Address + 0xFFF) in range(p1Address, p1AddMax):
-            p2Address = random.randint(MEMORY_START_AT, MEMORY_END_AT - 0xFFF)
+        while p2Address in range(p1Address, p1AddMax) or (p2Address + MAX_PROGRAM_SIZE) in range(p1Address, p1AddMax):
+            p2Address = random.randint(MEMORY_START_AT, MEMORY_END_AT - MAX_PROGRAM_SIZE)
 
         return p1Address, p2Address
 
