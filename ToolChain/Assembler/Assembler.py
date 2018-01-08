@@ -27,7 +27,7 @@ __author__ = "CSE"
 __copyright__ = "Copyright 2015, CSE"
 __credits__ = ["CSE"]
 __license__ = "GPL"
-__version__ = "1.3"
+__version__ = "2.0"
 __maintainer__ = "CSE"
 __status__ = "Dev"
 
@@ -73,22 +73,45 @@ class Assembler:
         fileContent += struct.pack(">I", self.parser.finalSize)
         fileContent += b"</AssemblySize>"
 
-        # External symbols allow for a file to be linked with another file
-        fileContent += b"<ExternalSymbols>"
-        for reference in self.parser.referenceDict:
-            if EXPORTED_REFERENCE_INDICATOR in reference:
-                refName = reference.split()[1]
-                fileContent += b"<refName>" + refName.encode("utf-8") + b"</refName>"
-                fileContent += b"<refAdd>" + struct.pack(">I", self.parser.referenceDict[reference]) + b"</refAdd>"
-        fileContent += b"</ExternalSymbols>"
+        validInternalRef = []   # This will be used to validate for good external reference
+                                # This works because all reference (internal and external) end up
+                                # listed in the internal references anyway.
 
         # Deal with internal symbols
         fileContent += b"<InternalSymbols>"
         for reference in self.parser.referenceDict:
             if EXPORTED_REFERENCE_INDICATOR not in reference:
+                validInternalRef.append(reference)
                 fileContent += b"<refName>" + reference.encode("utf-8") + b"</refName>"
                 fileContent += b"<refAdd>" + struct.pack(">I", self.parser.referenceDict[reference]) + b"</refAdd>"
+
+                # Update global offsets would it be required
+                # This is required since all global offsets are set to 0 at the moment they are parsed
+                wouldBeExported = EXPORTED_REFERENCE_INDICATOR + " " + reference
+                if wouldBeExported in self.parser.referenceDict.keys():
+                    self.parser.referenceDict[wouldBeExported] = self.parser.referenceDict[reference]
+
         fileContent += b"</InternalSymbols>"
+
+        # External symbols allow for a file to be linked with another file
+        fileContent += b"<ExternalSymbols>"
+        for reference in self.parser.referenceDict:
+            if EXPORTED_REFERENCE_INDICATOR in reference:
+                isValid = False
+                shortReference = reference.split()[1]
+                for internalReference in validInternalRef:
+                    if shortReference == internalReference:
+                        isValid = True
+                        break
+
+                if isValid:
+                    refName = reference.split()[1]
+                    fileContent += b"<refName>" + refName.encode("utf-8") + b"</refName>"
+                    fileContent += b"<refAdd>" + struct.pack(">I", self.parser.referenceDict[reference]) + b"</refAdd>"
+                else:
+                    raise ValueError("Unresolved reference: {} is exported but "
+                                     "is never declared.".format(reference))
+        fileContent += b"</ExternalSymbols>"
 
         # Deal with the text section
         fileContent += b"<Text>"

@@ -28,7 +28,7 @@ __author__ = "CSE"
 __copyright__ = "Copyright 2015, CSE"
 __credits__ = ["CSE"]
 __license__ = "GPL"
-__version__ = "1.3"
+__version__ = "2.0"
 __maintainer__ = "CSE"
 __status__ = "Dev"
 
@@ -119,7 +119,7 @@ class AssembledParsedFile:
         result = {}
 
         # Regular expression used to do the extraction
-        reRefName = b"<refName>[A-Z_0-9]{1,15}</refName>"
+        reRefName = b"<refName>[A-Z_0-9]{1,}</refName>"
         reRefAdd = b"<refAdd>[\x00-\xFF]{4}</refAdd>"
 
         # Extract the info into two lists

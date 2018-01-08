@@ -22,17 +22,19 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 from CapuaEnvironment.MemoryArray.MemoryArray import MemoryArray
 from CapuaEnvironment.IOComponent.MemoryMappedDevices.Clock.Clock import Clock
-from CapuaEnvironment.IOComponent.MemoryMappedDevices.MemoryManagementUnit.MemoryManagementUnit import MemoryManagementUnit
-from CapuaEnvironment.IOComponent.MemoryMappedDevices.SpartacusThreadMultiplexer.SpartacusThreadMultiplexer import SpartacusThreadMultiplexer
+from CapuaEnvironment.IOComponent.MemoryMappedDevices.Terminal.Terminal import Terminal
+from CapuaEnvironment.IOComponent.MemoryMappedDevices.InterruptClock.InterruptClock import InterruptClock
+from CapuaEnvironment.IOComponent.MemoryMappedDevices.HardDrive.HardDrive import HardDrive
 from Configuration.Configuration import MEMORY_START_AT
 
 import struct
+import threading
 
 __author__ = "CSE"
 __copyright__ = "Copyright 2015, CSE"
 __credits__ = ["CSE"]
 __license__ = "GPL"
-__version__ = "1.3"
+__version__ = "2.0"
 __maintainer__ = "CSE"
 __status__ = "Dev"
 
@@ -90,32 +92,43 @@ class MemoryIOController:
     _memoryArray = None
     _memoryMappedDevice = None
 
-    def __init__(self, memoryArray: MemoryArray=None):
+    def __init__(self, memoryArray: MemoryArray=None, testOnly: bool=True):
         """
         Simple initialisation, this class is dependant on the presence of a memory array
         for it to work properly.
         :param memoryArray: A valid MemoryArray
+        :param eu: The execution unit owning this MIOC
         """
         if memoryArray is None or type(memoryArray) is not MemoryArray:
-            raise RuntimeError("Capua MemoryIOController Error")
+            raise RuntimeError("Capua MemoryIOController Error - Setting up memoryArray")
 
         self._memoryArray = memoryArray
         self._memoryMappedDevice = []
 
-        mmu = MemoryManagementUnit(parentMIOC=self)
-        self.registerMemoryMappedDevice(device=mmu,
-                                        startAddress=mmu.startAddress,
-                                        mask=mmu.mask)
+        self.eu = None
 
         clock = Clock(parentMIOC=self)
         self.registerMemoryMappedDevice(device=clock,
                                         startAddress=clock.startAddress,
                                         mask=clock.mask)
 
-        stmp = SpartacusThreadMultiplexer(parentMIOC=self)
-        self.registerMemoryMappedDevice(device=stmp,
-                                        startAddress=stmp.startAddress,
-                                        mask=stmp.mask)
+        if not testOnly:
+            iClock = InterruptClock(parentMIOC=self)
+            self.registerMemoryMappedDevice(device=iClock,
+                                            startAddress=iClock.startAddress,
+                                            mask=iClock.mask)
+
+            terminal = Terminal(parentMIOC=self)
+            self.registerMemoryMappedDevice(device=terminal,
+                                            startAddress=terminal.startAddress,
+                                            mask=terminal.mask)
+
+            hardDrive = HardDrive(parentMIOC=self)
+            self.registerMemoryMappedDevice(device=hardDrive,
+                                            startAddress=hardDrive.startAddress,
+                                            mask=hardDrive.mask)
+
+        self._memoryBusLock = threading.Lock()
 
     def memoryWriteAtAddressForLength(self, address=0x00, length=4, value=0x00, source="System"):
         """
@@ -128,6 +141,8 @@ class MemoryIOController:
         :return: None
         """
 
+        self._memoryBusLock.acquire()
+
         # If action taken on memory mapped hardware we need to send it to the hardware!
         if address < MEMORY_START_AT:
             self._passMemoryReadWriteToMemoryMappedHardware(address=address,
@@ -135,16 +150,16 @@ class MemoryIOController:
                                                             value=value,
                                                             isWrite=True,
                                                             source=source)
-            return
+        else:
+            # First, we get the memory slice that we need to use and value to be written in individual bytes
+            memorySlice = self._memoryArray.extractMemory(address, length)
+            valueArray = self._prepareNumericValueToBeWrittenToMemory(length, value)
 
-        # First, we get the memory slice that we need to use and value to be written in individual bytes
-        memorySlice = self._memoryArray.extractMemory(address, length)
-        valueArray = self._prepareNumericValueToBeWrittenToMemory(length, value)
+            # Now we write to memory!
+            for i in range(0, len(valueArray)):
+                memorySlice[i].writeValue(valueArray[i], accessedBy=source)
 
-        # Now we write to memory!
-        for i in range(0, len(valueArray)):
-            memorySlice[i].writeValue(valueArray[i], accessedBy=source)
-
+        self._memoryBusLock.release()
         return
 
     def memoryReadAtAddressForLength(self, address=0x00, length=4):
@@ -156,13 +171,14 @@ class MemoryIOController:
         :return: int value
         """
 
+        self._memoryBusLock.acquire()
+
         # If action taken on memory mapped hardware we need to send it to the hardware!
         if address < MEMORY_START_AT:
             extractedValue = self._passMemoryReadWriteToMemoryMappedHardware(address=address,
                                                                              length=length,
                                                                              isWrite=False)
         else:
-            extractedValue = 0
             extractedMemoryCells = self._memoryArray.extractMemory(address, length)
             valueToBeUnpacked = b""
 
@@ -176,7 +192,17 @@ class MemoryIOController:
                 valueToBeUnpacked = b'\x00' + valueToBeUnpacked
             extractedValue = struct.unpack(">I", valueToBeUnpacked)[0]
 
+        self._memoryBusLock.release()
         return extractedValue
+
+    def prepareForShutdown(self):
+        """
+        This method is called when the MIOC needs to get ready to be shutdown. This translate in the MIOC letting
+        all devices be aware that they should arrange for any running thread to stop.
+        :return:
+        """
+        for device in self._memoryMappedDevice:
+            device.prepareForShutdown()
 
     def _passMemoryReadWriteToMemoryMappedHardware(self,
                                                    address=0x00,
@@ -193,8 +219,6 @@ class MemoryIOController:
         :param source: str, this is a marker to identify an action, usually the name associated with an execution unit
         :return: int value if read, None otherwise
         """
-        returnValue = None
-
         # We need to find a device that accept response for this memory access
         selectedDevice = None
         for device in self._memoryMappedDevice:
@@ -212,7 +236,7 @@ class MemoryIOController:
                                                     source=source)
         else:
             # If we are here, no device responded to this device "call"
-            raise MemoryError("Access to Memory Mapped Hardware with invalid address")
+            raise MemoryError("Access to Memory Mapped Hardware with invalid address: {}".format(address))
         return returnValue
 
     def _prepareNumericValueToBeWrittenToMemory(self, length=0, value=0):
@@ -257,4 +281,3 @@ class MemoryIOController:
             raise ValueError("Invalid mask for memory mapped device")
 
         self._memoryMappedDevice.append(device)
-

@@ -30,7 +30,7 @@ __author__ = "CSE"
 __copyright__ = "Copyright 2015, CSE"
 __credits__ = ["CSE"]
 __license__ = "GPL"
-__version__ = "1.3"
+__version__ = "2.0"
 __maintainer__ = "CSE"
 __status__ = "Dev"
 
@@ -490,7 +490,7 @@ class TestParser(unittest.TestCase):
         self.assertEqual(buildInstruction.width, 0x04)
         self.assertEqual(buildInstruction.flags, None)
         self.assertEqual(buildInstruction.operationMnemonic, "MEMR")
-        self.assertEqual(buildInstruction.instructionLength, 2)
+        self.assertEqual(buildInstruction.instructionLength, 3)
 
         buildInstruction, lineInstruction = self.parser._parseCodeLine(["MEMR", "[3]", "$A", "$B"])
         self.assertEqual(buildInstruction.instructionCode, 0b00010000)
@@ -501,7 +501,7 @@ class TestParser(unittest.TestCase):
         self.assertEqual(buildInstruction.width, 0x03)
         self.assertEqual(buildInstruction.flags, None)
         self.assertEqual(buildInstruction.operationMnemonic, "MEMR")
-        self.assertEqual(buildInstruction.instructionLength, 2)
+        self.assertEqual(buildInstruction.instructionLength, 3)
 
         buildInstruction, lineInstruction = self.parser._parseCodeLine(["MEMR", "[2]", "$A", "$B"])
         self.assertEqual(buildInstruction.instructionCode, 0b00010000)
@@ -512,7 +512,7 @@ class TestParser(unittest.TestCase):
         self.assertEqual(buildInstruction.width, 0x02)
         self.assertEqual(buildInstruction.flags, None)
         self.assertEqual(buildInstruction.operationMnemonic, "MEMR")
-        self.assertEqual(buildInstruction.instructionLength, 2)
+        self.assertEqual(buildInstruction.instructionLength, 3)
 
         buildInstruction, lineInstruction = self.parser._parseCodeLine(["MEMR", "[1]", "$A", "$B"])
         self.assertEqual(buildInstruction.instructionCode, 0b00010000)
@@ -523,7 +523,7 @@ class TestParser(unittest.TestCase):
         self.assertEqual(buildInstruction.width, 0x01)
         self.assertEqual(buildInstruction.flags, None)
         self.assertEqual(buildInstruction.operationMnemonic, "MEMR")
-        self.assertEqual(buildInstruction.instructionLength, 2)
+        self.assertEqual(buildInstruction.instructionLength, 3)
 
         buildInstruction, lineInstruction = self.parser._parseCodeLine(["MEMR", "[4]", "#0xFF", "$B"])
         self.assertEqual(buildInstruction.instructionCode, 0b00000001)
@@ -584,7 +584,7 @@ class TestParser(unittest.TestCase):
         self.assertEqual(buildInstruction.width, 0x04)
         self.assertEqual(buildInstruction.flags, None)
         self.assertEqual(buildInstruction.operationMnemonic, "MEMW")
-        self.assertEqual(buildInstruction.instructionLength, 2)
+        self.assertEqual(buildInstruction.instructionLength, 3)
 
         buildInstruction, lineInstruction = self.parser._parseCodeLine(["MEMW", "[4]", "#0xFF", "$B"])
         self.assertEqual(buildInstruction.instructionCode, 0b00000000)
@@ -984,8 +984,12 @@ class TestParser(unittest.TestCase):
         self.assertEqual(0b00, self.parser.translateRegisterNameToRegisterCode(registerName="A"))
         self.assertEqual(0b01, self.parser.translateRegisterNameToRegisterCode(registerName="B"))
         self.assertEqual(0b10, self.parser.translateRegisterNameToRegisterCode(registerName="C"))
-        self.assertEqual(0b11, self.parser.translateRegisterNameToRegisterCode(registerName="S"))
-        self.assertRaises(ValueError, self.parser.translateRegisterNameToRegisterCode, "D")  # Invalid register
+        self.assertEqual(0b11, self.parser.translateRegisterNameToRegisterCode(registerName="D"))
+        self.assertEqual(0b100, self.parser.translateRegisterNameToRegisterCode(registerName="E"))
+        self.assertEqual(0b101, self.parser.translateRegisterNameToRegisterCode(registerName="F"))
+        self.assertEqual(0b110, self.parser.translateRegisterNameToRegisterCode(registerName="G"))
+        self.assertEqual(0b1111, self.parser.translateRegisterNameToRegisterCode(registerName="S"))
+        self.assertRaises(ValueError, self.parser.translateRegisterNameToRegisterCode, "x")  # Invalid register
 
     def test_translateTextImmediateToImmediate(self):
         """
@@ -1061,6 +1065,11 @@ class TestParser(unittest.TestCase):
         _findPossibleCodesForInstruction(self, partialInstruction: Instruction=None):
         """
         partialInstruction = Instruction(skipValidation=True)
+        partialInstruction.operationMnemonic = "ACTI"
+        codes = self.parser._findPossibleCodesForInstruction(partialInstruction)
+        self.assertEqual(codes, [0b11110001])
+
+        partialInstruction = Instruction(skipValidation=True)
         partialInstruction.operationMnemonic = "ADD"
         codes = self.parser._findPossibleCodesForInstruction(partialInstruction)
         self.assertEqual(codes, [0b01100110, 0b10010010])
@@ -1081,9 +1090,24 @@ class TestParser(unittest.TestCase):
         self.assertEqual(codes, [0b01101000, 0b10011010])
 
         partialInstruction = Instruction(skipValidation=True)
+        partialInstruction.operationMnemonic = "DACTI"
+        codes = self.parser._findPossibleCodesForInstruction(partialInstruction)
+        self.assertEqual(codes, [0b11110010])
+
+        partialInstruction = Instruction(skipValidation=True)
         partialInstruction.operationMnemonic = "DIV"
         codes = self.parser._findPossibleCodesForInstruction(partialInstruction)
         self.assertEqual(codes, [0b10010101])
+
+        partialInstruction = Instruction(skipValidation=True)
+        partialInstruction.operationMnemonic = "HIRET"
+        codes = self.parser._findPossibleCodesForInstruction(partialInstruction)
+        self.assertEqual(codes, [0b11110011])
+
+        partialInstruction = Instruction(skipValidation=True)
+        partialInstruction.operationMnemonic = "INT"
+        codes = self.parser._findPossibleCodesForInstruction(partialInstruction)
+        self.assertEqual(codes, [0b01110110, 0b10000011])
 
         partialInstruction = Instruction(skipValidation=True)
         partialInstruction.operationMnemonic = "JMP"
@@ -1146,6 +1170,16 @@ class TestParser(unittest.TestCase):
         self.assertEqual(codes, [0b11110000])
 
         partialInstruction = Instruction(skipValidation=True)
+        partialInstruction.operationMnemonic = "SFSTOR"
+        codes = self.parser._findPossibleCodesForInstruction(partialInstruction)
+        self.assertEqual(codes, [0b01000010, 0b01010010])
+
+        partialInstruction = Instruction(skipValidation=True)
+        partialInstruction.operationMnemonic = "SIVR"
+        codes = self.parser._findPossibleCodesForInstruction(partialInstruction)
+        self.assertEqual(codes, [0b01110101])
+
+        partialInstruction = Instruction(skipValidation=True)
         partialInstruction.operationMnemonic = "SHL"
         codes = self.parser._findPossibleCodesForInstruction(partialInstruction)
         self.assertEqual(codes, [0b01100101, 0b10010110])
@@ -1170,7 +1204,34 @@ class TestParser(unittest.TestCase):
         codes = self.parser._findPossibleCodesForInstruction(partialInstruction)
         self.assertEqual(codes, [0b01100011, 0b10010000])
 
-        self.assertEqual(22, len(operationDescription))  # Just validate that nothing was added without changing test case...
+        partialInstruction = Instruction(skipValidation=True)
+        partialInstruction.operationMnemonic = "SFSTOR"
+        codes = self.parser._findPossibleCodesForInstruction(partialInstruction)
+        self.assertEqual(codes, [0b01000010, 0b01010010])
+
+        self.assertEqual(28, len(operationDescription))  # Validate that nothing was added without changing test case
+
+    def test_getInstructionCodeAndFormUsingPossibleCodesActi(self):
+        """
+        Test the method:
+        _getInstructionCodeAndFormUsingPossibleCodes(self,
+                                                     partialInstruction: Instruction=None,
+                                                     possibleCodes: list=None):
+        """
+        # ACTI
+        buildInstruction = Instruction(skipValidation=True)
+        buildInstruction.operationMnemonic = "ACTI"
+        buildInstruction.sourceRegister = None
+        buildInstruction.sourceImmediate = None
+        buildInstruction.destinationRegister = None
+        buildInstruction.destinationImmediate = None
+        buildInstruction.width = None
+        buildInstruction.flags = None
+        possibleCodes = [0b11110001]
+        instructionCode, instructionForm = self.parser._getInstructionCodeAndFormUsingPossibleCodes(buildInstruction,
+                                                                                                    possibleCodes)
+        self.assertEqual(0b11110001, instructionCode)
+        self.assertEqual("Ins", instructionForm)
 
     def test_getInstructionCodeAndFormUsingPossibleCodesAdd(self):
         """
@@ -1260,6 +1321,28 @@ class TestParser(unittest.TestCase):
         self.assertEqual(0b10011010, instructionCode)
         self.assertEqual("InsRegReg", instructionForm)
 
+    def test_getInstructionCodeAndFormUsingPossibleCodesDacti(self):
+        """
+        Test the method:
+        _getInstructionCodeAndFormUsingPossibleCodes(self,
+                                                     partialInstruction: Instruction=None,
+                                                     possibleCodes: list=None):
+        """
+        # DACTI
+        buildInstruction = Instruction(skipValidation=True)
+        buildInstruction.operationMnemonic = "DACTI"
+        buildInstruction.sourceRegister = None
+        buildInstruction.sourceImmediate = None
+        buildInstruction.destinationRegister = None
+        buildInstruction.destinationImmediate = None
+        buildInstruction.width = None
+        buildInstruction.flags = None
+        possibleCodes = [0b11110010]
+        instructionCode, instructionForm = self.parser._getInstructionCodeAndFormUsingPossibleCodes(buildInstruction,
+                                                                                                    possibleCodes)
+        self.assertEqual(0b11110010, instructionCode)
+        self.assertEqual("Ins", instructionForm)
+
     def test_getInstructionCodeAndFormUsingPossibleCodesDiv(self):
         """
         Test the method:
@@ -1281,6 +1364,50 @@ class TestParser(unittest.TestCase):
                                                                                                     possibleCodes)
         self.assertEqual(0b10010101, instructionCode)
         self.assertEqual("InsRegReg", instructionForm)
+
+    def test_getInstructionCodeAndFormUsingPossibleCodesHiret(self):
+        """
+        Test the method:
+        _getInstructionCodeAndFormUsingPossibleCodes(self,
+                                                     partialInstruction: Instruction=None,
+                                                     possibleCodes: list=None):
+        """
+        # INT
+        buildInstruction = Instruction(skipValidation=True)
+        buildInstruction.operationMnemonic = "HIRET"
+        buildInstruction.sourceRegister = None
+        buildInstruction.sourceImmediate = None
+        buildInstruction.destinationRegister = None
+        buildInstruction.destinationImmediate = None
+        buildInstruction.width = None
+        buildInstruction.flags = None
+        possibleCodes = [0b11110011]
+        instructionCode, instructionForm = self.parser._getInstructionCodeAndFormUsingPossibleCodes(buildInstruction,
+                                                                                                    possibleCodes)
+        self.assertEqual(0b11110011, instructionCode)
+        self.assertEqual("Ins", instructionForm)
+
+    def test_getInstructionCodeAndFormUsingPossibleCodesInt(self):
+        """
+        Test the method:
+        _getInstructionCodeAndFormUsingPossibleCodes(self,
+                                                     partialInstruction: Instruction=None,
+                                                     possibleCodes: list=None):
+        """
+        # INT
+        buildInstruction = Instruction(skipValidation=True)
+        buildInstruction.operationMnemonic = "INT"
+        buildInstruction.sourceRegister = 0b111
+        buildInstruction.sourceImmediate = None
+        buildInstruction.destinationRegister = None
+        buildInstruction.destinationImmediate = None
+        buildInstruction.width = None
+        buildInstruction.flags = None
+        possibleCodes = [0b01110110, 0b10000011]
+        instructionCode, instructionForm = self.parser._getInstructionCodeAndFormUsingPossibleCodes(buildInstruction,
+                                                                                                    possibleCodes)
+        self.assertEqual(0b01110110, instructionCode)
+        self.assertEqual("InsReg", instructionForm)
 
     def test_getInstructionCodeAndFormUsingPossibleCodesJmp(self):
         """
@@ -1333,7 +1460,7 @@ class TestParser(unittest.TestCase):
                                                      partialInstruction: Instruction=None,
                                                      possibleCodes: list=None):
         """
-        # Memr
+        # MEMR
         buildInstruction = Instruction(skipValidation=True)
         buildInstruction.operationMnemonic = "MEMR"
         buildInstruction.sourceRegister = 0
@@ -1546,6 +1673,28 @@ class TestParser(unittest.TestCase):
         self.assertEqual(0b11110000, instructionCode)
         self.assertEqual("Ins", instructionForm)
 
+    def test_getInstructionCodeAndFormUsingPossibleCodesSfstor(self):
+        """
+        Test the method:
+        _getInstructionCodeAndFormUsingPossibleCodes(self,
+                                                     partialInstruction: Instruction=None,
+                                                     possibleCodes: list=None):
+        """
+        # SFSTOR
+        buildInstruction = Instruction(skipValidation=True)
+        buildInstruction.operationMnemonic = "SFSTOR"
+        buildInstruction.sourceRegister = 0b10
+        buildInstruction.sourceImmediate = None
+        buildInstruction.destinationRegister = None
+        buildInstruction.destinationImmediate = None
+        buildInstruction.width = None
+        buildInstruction.flags = 0b100
+        possibleCodes = [0b01000010, 0b01010010]
+        instructionCode, instructionForm = self.parser._getInstructionCodeAndFormUsingPossibleCodes(buildInstruction,
+                                                                                                    possibleCodes)
+        self.assertEqual(0b01010010, instructionCode)
+        self.assertEqual("InsFlagReg", instructionForm)
+
     def test_getInstructionCodeAndFormUsingPossibleCodesShl(self):
         """
         Test the method:
@@ -1589,6 +1738,29 @@ class TestParser(unittest.TestCase):
                                                                                                     possibleCodes)
         self.assertEqual(0b10011001, instructionCode)
         self.assertEqual("InsRegReg", instructionForm)
+
+    def test_getInstructionCodeAndFormUsingPossibleCodesSivr(self):
+        """
+        Test the method:
+        _getInstructionCodeAndFormUsingPossibleCodes(self,
+                                                     partialInstruction: Instruction=None,
+                                                     possibleCodes: list=None):
+        """
+        # SIVR
+        buildInstruction = Instruction(skipValidation=True)
+        buildInstruction.operationMnemonic = "SIVR"
+        buildInstruction.sourceRegister = 0
+        buildInstruction.sourceImmediate = None
+        buildInstruction.destinationRegister = None
+        buildInstruction.destinationImmediate = None
+        buildInstruction.width = None
+        buildInstruction.flags = None
+        possibleCodes = [0b01110101]
+        instructionCode, instructionForm = self.parser._getInstructionCodeAndFormUsingPossibleCodes(
+            buildInstruction,
+            possibleCodes)
+        self.assertEqual(0b01110101, instructionCode)
+        self.assertEqual("InsReg", instructionForm)
 
     def test_getInstructionCodeAndFormUsingPossibleCodesSnt(self):
         """

@@ -24,7 +24,12 @@ from CapuaEnvironment.Capua import Capua
 from Configuration.Configuration import REGISTER_A, \
                                         REGISTER_B, \
                                         REGISTER_C, \
-                                        REGISTER_S
+                                        REGISTER_D, \
+                                        REGISTER_E, \
+                                        REGISTER_F, \
+                                        REGISTER_G, \
+                                        REGISTER_S, \
+                                        DEBUGGER_WAKEUP_TICK_COUNT
 
 from ToolChain.Linker.Constants import DEFAULT_LOAD_ADDRESS
 
@@ -34,7 +39,7 @@ __author__ = "CSE"
 __copyright__ = "Copyright 2015, CSE"
 __credits__ = ["CSE"]
 __license__ = "GPL"
-__version__ = "1.3"
+__version__ = "2.0"
 __maintainer__ = "CSE"
 __status__ = "Dev"
 
@@ -164,7 +169,7 @@ class Debugger:
         :return:
         """
         if outputFile is not None:
-            self.outputFile = open(outputFile, "w")
+            self.outputFile = open(outputFile[0], "w")
 
     def tearDownLoggingFacilities(self):
         """
@@ -234,6 +239,7 @@ class Debugger:
             userCommand = input("{}: ".format((inputFile,)))
             self.debugLog(userCommand)
             if userCommand == "quit" or userCommand == "exit":
+                self.capua.eu.halt()
                 break
             self.runUserCommand(command=userCommand)
 
@@ -314,6 +320,14 @@ class Debugger:
             result = "B"
         elif numericRegister == REGISTER_C:
             result = "C"
+        elif numericRegister == REGISTER_D:
+            result = "D"
+        elif numericRegister == REGISTER_E:
+            result = "E"
+        elif numericRegister == REGISTER_F:
+            result = "F"
+        elif numericRegister == REGISTER_G:
+            result = "G"
         elif numericRegister == REGISTER_S:
             result = "S"
 
@@ -330,6 +344,10 @@ class Debugger:
         self.debugLog("{} = {}  {}".format("A    ", self.capua.eu.A, hex(self.capua.eu.A),))
         self.debugLog("{} = {}  {}".format("B    ", self.capua.eu.B, hex(self.capua.eu.B),))
         self.debugLog("{} = {}  {}".format("C    ", self.capua.eu.C, hex(self.capua.eu.C),))
+        self.debugLog("{} = {}  {}".format("D    ", self.capua.eu.D, hex(self.capua.eu.D),))
+        self.debugLog("{} = {}  {}".format("E    ", self.capua.eu.E, hex(self.capua.eu.E),))
+        self.debugLog("{} = {}  {}".format("F    ", self.capua.eu.F, hex(self.capua.eu.F),))
+        self.debugLog("{} = {}  {}".format("G    ", self.capua.eu.G, hex(self.capua.eu.G),))
         self.debugLog("{} = {}  {}".format("S    ", self.capua.eu.S, hex(self.capua.eu.S),))
         self.debugLog("{} = {}  {}".format("I    ", self.capua.eu.I, hex(self.capua.eu.I),))
         self.debugLog("{} = {}  {}".format("FLAGS", self.capua.eu.FLAGS, bin(self.capua.eu.FLAGS),))
@@ -478,7 +496,7 @@ class Debugger:
 
     def runToBreakPoint(self):
         """
-        This will run until a breakpoint is reached. It will also break every 500 tick
+        This will run until a breakpoint is reached. It will also break every DEBUGGER_WAKEUP_TICK_COUNT tick
         :return:
         """
         tickCounter = 0
@@ -488,9 +506,9 @@ class Debugger:
                 # Break point reached
                 break
             first = False
-            if tickCounter == 500:
+            if 0 < DEBUGGER_WAKEUP_TICK_COUNT == tickCounter:
                 # Just check if user want to go back to single step mode
-                self.debugLog("500 instructions executed since last break, "
+                self.debugLog(str(DEBUGGER_WAKEUP_TICK_COUNT) + " instructions executed since last break, "
                               "do you want to go back to single step (y/n): ")
                 answer = input("")
                 if answer == "y":

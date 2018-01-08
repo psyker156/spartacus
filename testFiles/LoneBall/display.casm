@@ -1,0 +1,68 @@
+; This file contains code required to manage the display
+
+.global display_Line
+.global display_Char
+.global display_Clear
+.global display_Clear_Col
+
+; display_Line($A=line, $C=text, $D=len)
+display_Line:
+    PUSH $E
+    PUSH $F
+    PUSH $G
+    XOR $E $E
+    MOV #80 $F
+    MUL $F $A
+    ADD #0x20001000 $A
+dl_print_loop:
+    MEMR [1] $C $G
+    MEMW [1] $G $A
+    ADD #1 $A
+    ADD #1 $C
+    SUB #1 $D
+    CMP #0 $D
+    JMP <LH> dl_print_loop
+    POP $G
+    POP $F
+    POP $E
+    RET
+
+; display_Char($A=xpos, $C=ypos, $D=char)
+display_Char:
+    push $E
+    push $F
+    MOV $A $E
+    MOV #80 $F
+    MUL $F $C
+    ADD $A $E           ; Here, $E contains the y offset in screen display buffer
+    ADD #0x20001000 $E  ; Address in display buffer is in $E
+    MEMW [1] $D $E
+    pop $F
+    pop $E
+    RET
+
+; display_Clear()
+display_Clear:
+    MOV #0x20001000 $A
+    MOV #2000 $B
+    MOV #0 $C
+dc_loop:
+    MEMW [4] #0x20202020 $A
+    ADD #4 $C
+    ADD #4 $A
+    CMP $C $B
+    JMP <L> dc_loop
+    RET
+
+; display_Clear_Col($A = colx)
+display_Clear_Col:
+    MOV #25 $C
+    MOV #0x20001000 $B
+    ADD $A $B
+dcc_loop:
+    MEMW [1] #0x20 $B
+    ADD #80 $B
+    SUB #1 $C
+    CMP #0 $C
+    JMP <L> dcc_loop
+    RET

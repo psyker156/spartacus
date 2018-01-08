@@ -20,6 +20,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 """
 
+from Configuration.Configuration import FIRMWARE_BINARY_FILE_PATH, \
+                                        FIRMWARE_LOAD_ADDRESS
 from ToolChain.Debugger.Debugger import Debugger
 from ToolChain.Linker.Constants import DEFAULT_LOAD_ADDRESS, UNDEFINED
 
@@ -30,7 +32,7 @@ __author__ = "CSE"
 __copyright__ = "Copyright 2015, CSE"
 __credits__ = ["CSE"]
 __license__ = "GPL"
-__version__ = "1.3"
+__version__ = "2.0"
 __maintainer__ = "CSE"
 __status__ = "Dev"
 
@@ -46,7 +48,7 @@ def parseCommandLineArgs():
                                             "licence. Feel free to distribute, modify, "
                                             "contribute and learn!".format(__license__,))
     parser.add_argument("-i", "--input",
-                        required=True,
+                        required=False,
                         type=str,
                         help="Define the input file(s) to be used.")
 
@@ -92,10 +94,21 @@ def validatePaths(argsWithPaths):
 
     return gotSymbols
 
+
 if __name__ == '__main__':
     usableArgs = parseCommandLineArgs()
-    gotSymbols = validatePaths(usableArgs)  # Make sure the parsed info is usable before using it!
-    symbolsFile = usableArgs.input.split(".")[0] + ".sym" if gotSymbols else ""
+
+    gotSymbols = False
+    symbolsFile = None
+
+    if usableArgs.input is not None:
+        gotSymbols = validatePaths(usableArgs)  # Make sure the parsed info is usable before using it!
+        symbolsFile = usableArgs.input.split(".")[0] + ".sym" if gotSymbols else ""
+    else:
+        usableArgs.input = FIRMWARE_BINARY_FILE_PATH
+        usableArgs.software = False
+        usableArgs.address = FIRMWARE_LOAD_ADDRESS
+
 
     print("Debug session about to begin, following options will be used")
     print("  input file:             {}".format(usableArgs.input,))
@@ -112,6 +125,6 @@ if __name__ == '__main__':
                         loadAddress=usableArgs.address,
                         softwareLoader=usableArgs.software,
                         symbolsFile=symbolsFile)
-    if usableArgs.output is not None and os.path.exists(usableArgs.output):
+    if usableArgs.output is not None and os.path.exists(usableArgs.output[0]):
         # The assembler did the job correctly and the out file has been written to disk!
         print("Debug session is over, output file has been written to {}". format(usableArgs.output,))

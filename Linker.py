@@ -30,7 +30,7 @@ __author__ = "CSE"
 __copyright__ = "Copyright 2015, CSE"
 __credits__ = ["CSE"]
 __license__ = "GPL"
-__version__ = "1.3"
+__version__ = "2.0"
 __maintainer__ = "CSE"
 __status__ = "Dev"
 
@@ -63,7 +63,7 @@ def parseCommandLineArgs():
                         required=False,
                         nargs=1,
                         type=int,
-                        default=DEFAULT_LOAD_ADDRESS,
+                        default=[DEFAULT_LOAD_ADDRESS],
                         help="Define the address at which a binary should be loaded. Don't mess this up, "
                              "Capua does not currently have virtual addressing mode... This means that you"
                              "HAVE TO MAKE SURE that your binary is loaded in a free memory region otherwise"
@@ -96,6 +96,7 @@ def validatePaths(argsWithPaths):
         if not os.path.exists(file):
             raise ValueError("ERROR: file {} does not exists.".format(file,))
 
+
 if __name__ == '__main__':
     usableArgs = parseCommandLineArgs()
     validatePaths(usableArgs)  # Make sure the parsed info is usable before using it!
@@ -108,7 +109,7 @@ if __name__ == '__main__':
 
     linker = StaticFlatLinker(inputFileList=usableArgs.input,
                               outputFile=usableArgs.output,
-                              loadAddress=usableArgs.address,
+                              loadAddress=usableArgs.address[0],
                               softwareLoader=usableArgs.software,
                               symbolsFile=symbolsFile)
     if os.path.exists(usableArgs.output):

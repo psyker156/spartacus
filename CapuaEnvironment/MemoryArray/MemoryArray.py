@@ -29,7 +29,7 @@ __author__ = "CSE"
 __copyright__ = "Copyright 2015, CSE"
 __credits__ = ["CSE"]
 __license__ = "GPL"
-__version__ = "1.3"
+__version__ = "2.0"
 __maintainer__ = "CSE"
 __status__ = "Dev"
 
@@ -68,7 +68,7 @@ class MemoryArray:
         # Making sure the length does not reach out of the memory
         lengthLimit = MEMORY_END_AT - address
         if length <= 0 or length > lengthLimit:
-            raise MemoryError("Access reaching out of bound of memory")
+            raise MemoryError("Access reaching out of bound of memory for address: {}".format(hex(address)))
 
         # Memory extraction from base
         baseIndex = self._computeArrayIndexFromAddress(address)
@@ -97,7 +97,7 @@ class MemoryArray:
         # First, is the address in a valid range
         if MEMORY_START_AT > address or address >= MEMORY_END_AT:
             # Address out of bounds!
-            raise MemoryError("Address out of bounds of memory")
+            raise MemoryError("Address out of bounds of memory {}".format(str(address)))
 
         # Calculate the actual index in memory array
         index = address - MEMORY_START_AT

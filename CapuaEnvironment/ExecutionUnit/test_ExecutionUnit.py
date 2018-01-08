@@ -34,7 +34,7 @@ __author__ = "CSE"
 __copyright__ = "Copyright 2015, CSE"
 __credits__ = ["CSE"]
 __license__ = "GPL"
-__version__ = "1.3"
+__version__ = "2.0"
 __maintainer__ = "CSE"
 __status__ = "Dev"
 
@@ -138,13 +138,208 @@ class TestExecutionUnit(unittest.TestCase):
         self.assertEqual(0, self.eu.C)
         self.assertEqual(0, self.eu.S)
         self.assertEqual(0, self.eu.FLAGS)
-        # MOV
-        self.eu.execute()
-        self.assertEqual(MEMORY_START_AT + 8, self.eu.I)
-        self.assertEqual(1, self.eu.A)
-        self.assertEqual(0, self.eu.B)
-        self.assertEqual(0, self.eu.C)
-        self.assertEqual(0, self.eu.S)
-        self.assertEqual(0, self.eu.FLAGS)
 
+        # Beware, ACTI and DACTI tests are dependent one on anoter
+        self.eu.setupCore(MEMORY_START_AT)
+        self.mioc.memoryWriteAtAddressForLength(MEMORY_START_AT, 1, 0b11110001)      # ACTI 1
+        self.mioc.memoryWriteAtAddressForLength(MEMORY_START_AT + 1, 1, 0b11110001)  # ACTI 2
+        self.mioc.memoryWriteAtAddressForLength(MEMORY_START_AT + 2, 1, 0b11110010)  # DACTI 1
+        self.mioc.memoryWriteAtAddressForLength(MEMORY_START_AT + 3, 1, 0b11110010)  # DACTI 2
+        # ACTI
+        self.eu.execute()
+        self.assertEqual(MEMORY_START_AT + 1, self.eu.I)
+        self.assertEqual(0b1, self.eu.IS)      # Interrupt State should be = 1 after ACTI
+        self.eu.execute()
+        self.assertEqual(MEMORY_START_AT + 2, self.eu.I)
+        self.assertEqual(0b1, self.eu.IS)      # Interrupt State should not change if ACTI is run when IS = 1
+        # DACTI
+        self.eu.execute()
+        self.assertEqual(MEMORY_START_AT + 3, self.eu.I)
+        self.assertEqual(0b0, self.eu.IS)      # Interrupt State should be = 0 after DACTI
+        self.eu.execute()
+        self.assertEqual(MEMORY_START_AT + 4, self.eu.I)
+        self.assertEqual(0b0, self.eu.IS)      # Interrupt State should not change if DACTI is run when IS = 0
+
+        # SFSTOR - Data will be written
+        self.eu.setupCore(MEMORY_START_AT)
+        self.eu.A = MEMORY_START_AT + 20
+        self.eu.B = 0xCCCCCCCC
+        self.mioc.memoryWriteAtAddressForLength(MEMORY_START_AT, 1, 0b01010010)
+        self.mioc.memoryWriteAtAddressForLength(MEMORY_START_AT + 1, 1, 0b00110001)  # Instruction goes: SFSTOR [LH] $B
+        self.eu.FLAGS = 0b00
+        self.eu.execute()
+        dataWritten = self.mioc.memoryReadAtAddressForLength(MEMORY_START_AT + 20, length=4)
+        self.assertEqual(MEMORY_START_AT + 2, self.eu.I)
+        self.assertEqual(0xCCCCCCCC, dataWritten)
+
+        # SFSTOR - Data will NOT be written
+        self.eu.setupCore(MEMORY_START_AT)
+        self.eu.A = MEMORY_START_AT + 20
+        self.eu.B = 0xBBBBBBBB
+        self.mioc.memoryWriteAtAddressForLength(MEMORY_START_AT, 1, 0b01010010)
+        self.mioc.memoryWriteAtAddressForLength(MEMORY_START_AT + 1, 1, 0b01000001)  # Instruction goes: SFSTOR [E] $B
+        self.mioc.memoryWriteAtAddressForLength(MEMORY_START_AT + 20, 4, 0xAAAAAAAA)
+        self.eu.FLAGS = 0b00
+        self.eu.execute()
+        dataWritten = self.mioc.memoryReadAtAddressForLength(MEMORY_START_AT + 20, length=4)
+        self.assertEqual(MEMORY_START_AT + 2, self.eu.I)
+        self.assertNotEqual(0xBBBBBBBB, dataWritten)
+
+        # SIVR
+        self.eu.setupCore(MEMORY_START_AT)
+        self.eu.A = 0xAAAAAAAA
+        self.mioc.memoryWriteAtAddressForLength(MEMORY_START_AT, 1, 0b01110101)
+        self.mioc.memoryWriteAtAddressForLength(MEMORY_START_AT + 1, 1, 0b00000000)  # Instruction goes: SIVR $A
+        self.eu.execute()
+        self.assertEqual(MEMORY_START_AT + 2, self.eu.I)
+        self.assertEqual(0xAAAAAAAA, self.eu.IVR)
+        self.assertEqual(0xAAAAAAAA, self.eu.A)
+
+        # HIRET - Deactivated Interrupts
+        self.eu.setupCore(MEMORY_START_AT)
+        self.mioc.memoryWriteAtAddressForLength(MEMORY_START_AT, 1, 0b11110011)
+        self.mioc.memoryWriteAtAddressForLength(0x40000100, 4, 0x40000200)  # This is the return address
+        self.mioc.memoryWriteAtAddressForLength(0x400000FC, 4, 0x1)  # This is the flag to be restored
+        self.eu.A = 0xFF
+        self.eu.IS = 0b0
+        self.eu.S = 0x40000100
+        self.eu.FLAGS = 0x0
+        sMarker = self.eu.S
+        self.eu.execute()
+        self.assertEqual(0xFF, self.eu.A, "HIRET broken - bad A register value")
+        self.assertEqual(0x01, self.eu.FLAGS, "HIRET broken - bad flag restoration")
+        self.assertEqual(0b1, self.eu.IS, "HIRET broken - IS should not be 0")
+        self.assertEqual(0x40000200, self.eu.I, "HIRET broken - Bad I address")
+        self.assertEqual(sMarker, self.eu.S + 8, "HIRET broken - Bad stack")
+
+        # INT register - Deactivated Interrupts
+        self.eu.setupCore(MEMORY_START_AT)
+        self.mioc.memoryWriteAtAddressForLength(MEMORY_START_AT, 1, 0b01110110)
+        self.mioc.memoryWriteAtAddressForLength(MEMORY_START_AT + 1, 1, 0b00000000)
+        self.eu.A = 0x0     # Holds the interrupt number
+        self.eu.IS = 0b0
+        self.eu.S = 0x40000100
+        self.eu.IVR = 0x40000050
+        self.mioc.memoryWriteAtAddressForLength(self.eu.IVR, 4, 0xAAAAAAAA)
+        self.mioc.memoryWriteAtAddressForLength(self.eu.IVR + 4, 4, 0xBBBBBBBB)
+        sMarker = self.eu.S
+        self.eu.execute()
+        self.assertEqual(self.eu.I, MEMORY_START_AT + 2, "INT when IS is 0 broken - Bad I address")
+        self.assertEqual(self.eu.S, sMarker, "INT when IS is 0 broken - Bad stack")
+
+        # INT register - Activated Interrupts
+        self.eu.setupCore(MEMORY_START_AT)
+        self.mioc.memoryWriteAtAddressForLength(MEMORY_START_AT, 1, 0b01110110)
+        self.mioc.memoryWriteAtAddressForLength(MEMORY_START_AT + 1, 1, 0b00000000)
+        self.eu.A = 0x0  # Holds the interrupt number
+        self.eu.IS = 0b1
+        self.eu.S = 0x40000100
+        self.eu.IVR = 0x40000050
+        self.mioc.memoryWriteAtAddressForLength(self.eu.IVR, 4, 0xAAAAAAAA)
+        self.mioc.memoryWriteAtAddressForLength(self.eu.IVR + 4, 4, 0xBBBBBBBB)
+        sMarker = self.eu.S
+        iMarker = self.eu.I
+        self.eu.execute()
+        self.assertEqual(self.eu.I, 0xAAAAAAAA, "INT when IS is 1 broken - Bad I address")
+        self.assertEqual(self.eu.S, sMarker + 4, "INT when IS is 1 broken - Bad stack")
+        topStack = self.mioc.memoryReadAtAddressForLength(self.eu.S, 4)
+        self.assertEqual(iMarker + 2, topStack, "INT when IS is 1 broken - Bad return address")
+        # Testing the second vector entry
+        self.eu.setupCore(MEMORY_START_AT)
+        self.mioc.memoryWriteAtAddressForLength(MEMORY_START_AT, 1, 0b01110110)
+        self.mioc.memoryWriteAtAddressForLength(MEMORY_START_AT + 1, 1, 0b00000000)
+        self.eu.A = 0x1  # Holds the interrupt number
+        self.eu.IS = 0b1
+        self.eu.S = 0x40000100
+        self.eu.IVR = 0x40000050
+        self.mioc.memoryWriteAtAddressForLength(self.eu.IVR, 4, 0xAAAAAAAA)
+        self.mioc.memoryWriteAtAddressForLength(self.eu.IVR + 4, 4, 0xBBBBBBBB)
+        sMarker = self.eu.S
+        iMarker = self.eu.I
+        self.eu.execute()
+        self.assertEqual(self.eu.I, 0xBBBBBBBB, "INT when IS is 1 broken - Bad I address")
+        self.assertEqual(self.eu.S, sMarker + 4, "INT when IS is 1 broken - Bad stack")
+        topStack = self.mioc.memoryReadAtAddressForLength(self.eu.S, 4)
+        self.assertEqual(iMarker + 2, topStack, "INT when IS is 1 broken - Bad return address")
+
+        # INT immediate - Deactivated Interrupts
+        self.eu.setupCore(MEMORY_START_AT)
+        self.mioc.memoryWriteAtAddressForLength(MEMORY_START_AT, 1, 0b10000011)
+        self.mioc.memoryWriteAtAddressForLength(MEMORY_START_AT + 1, 1, 0b00000000)  # Interrupt number is here
+        self.eu.IS = 0b0
+        self.eu.S = 0x40000100
+        self.eu.IVR = 0x40000050
+        self.mioc.memoryWriteAtAddressForLength(self.eu.IVR, 4, 0xAAAAAAAA)
+        self.mioc.memoryWriteAtAddressForLength(self.eu.IVR + 4, 4, 0xBBBBBBBB)
+        sMarker = self.eu.S
+        self.eu.execute()
+        self.assertEqual(self.eu.I, MEMORY_START_AT + 5, "INT when IS is 0 broken - Bad I address")
+        self.assertEqual(self.eu.S, sMarker, "INT when IS is 0 broken - Bad stack")
+
+        # INT immediate - Activated Interrupts
+        self.eu.setupCore(MEMORY_START_AT)
+        self.mioc.memoryWriteAtAddressForLength(MEMORY_START_AT, 1, 0b10000011)
+        self.mioc.memoryWriteAtAddressForLength(MEMORY_START_AT + 1, 4, 0b00000000)  # Interrupt number is here
+        self.eu.IS = 0b1
+        self.eu.S = 0x40000100
+        self.eu.IVR = 0x40000050
+        self.mioc.memoryWriteAtAddressForLength(self.eu.IVR, 4, 0xAAAAAAAA)
+        self.mioc.memoryWriteAtAddressForLength(self.eu.IVR + 4, 4, 0xBBBBBBBB)
+        sMarker = self.eu.S
+        iMarker = self.eu.I
+        self.eu.execute()
+        self.assertEqual(self.eu.I, 0xAAAAAAAA, "INT when IS is 1 broken - Bad I address")
+        self.assertEqual(self.eu.S, sMarker + 4, "INT when IS is 1 broken - Bad stack")
+        topStack = self.mioc.memoryReadAtAddressForLength(self.eu.S, 4)
+        self.assertEqual(iMarker + 5, topStack, "INT when IS is 1 broken - Bad return address")
+        # testing the second vector entry
+        self.eu.setupCore(MEMORY_START_AT)
+        self.mioc.memoryWriteAtAddressForLength(MEMORY_START_AT, 1, 0b10000011)
+        self.mioc.memoryWriteAtAddressForLength(MEMORY_START_AT + 1, 4, 0b00000001)  # Interrupt number is here
+        self.eu.IS = 0b1
+        self.eu.S = 0x40000100
+        self.eu.IVR = 0x40000050
+        self.mioc.memoryWriteAtAddressForLength(self.eu.IVR, 4, 0xAAAAAAAA)
+        self.mioc.memoryWriteAtAddressForLength(self.eu.IVR + 4, 4, 0xBBBBBBBB)
+        sMarker = self.eu.S
+        iMarker = self.eu.I
+        self.eu.execute()
+        self.assertEqual(self.eu.I, 0xBBBBBBBB, "INT when IS is 1 broken - Bad I address")
+        self.assertEqual(self.eu.S, sMarker + 4, "INT when IS is 1 broken - Bad stack")
+        topStack = self.mioc.memoryReadAtAddressForLength(self.eu.S, 4)
+        self.assertEqual(iMarker + 5, topStack, "INT when IS is 1 broken - Bad return address")
+
+    def test_reset(self):
+        self.eu.setupCore(MEMORY_START_AT)
+        self.eu.A = 1
+        self.eu.B = 1
+        self.eu.C = 1
+        self.eu.D = 1
+        self.eu.E = 1
+        self.eu.F = 1
+        self.eu.G = 1
+        self.eu.S = 1
+        self.eu.IS = 1
+        self.eu.IVR = 1
+        self.eu.FLAGS = 1
+        self.eu.reset(0)  # Making sure we can set I to value requested
+        count = self.eu.A + self.eu.B + self.eu.C + self.eu.D + self.eu.E + self.eu.F + self.eu.G + \
+                self.eu.S + self.eu.IS + self.eu.IVR + self.eu.I + self.eu.FLAGS
+        self.assertEqual(count, 0)
+        self.eu.setupCore(MEMORY_START_AT)
+        self.eu.A = 1
+        self.eu.B = 1
+        self.eu.C = 1
+        self.eu.D = 1
+        self.eu.E = 1
+        self.eu.F = 1
+        self.eu.G = 1
+        self.eu.S = 1
+        self.eu.IS = 1
+        self.eu.IVR = 1
+        self.eu.FLAGS = 1
+        self.eu.reset()  # Making sure we can rely on the default value for I after reset
+        count = self.eu.A + self.eu.B + self.eu.C + self.eu.D + self.eu.E + self.eu.F + self.eu.G + \
+                self.eu.S + self.eu.IS + self.eu.IVR + self.eu.I + self.eu.FLAGS
+        self.assertEqual(count, MEMORY_START_AT)
 

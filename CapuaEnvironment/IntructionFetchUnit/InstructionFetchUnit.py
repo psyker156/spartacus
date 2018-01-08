@@ -29,7 +29,7 @@ __author__ = "CSE"
 __copyright__ = "Copyright 2015, CSE"
 __credits__ = ["CSE"]
 __license__ = "GPL"
-__version__ = "1.3"
+__version__ = "2.0"
 __maintainer__ = "CSE"
 __status__ = "Dev"
 
@@ -91,11 +91,10 @@ class InstructionFetchUnit:
                     # We found the correct form!
                     instructionForm = formDescription[form]
                     break
-
         if instructionForm is None:
             # If we are here, no instruction were found that are corresponding
             # a user is trying to execute an invalid instruction!
-            raise ValueError("Invalid instruction detected")
+            raise ValueError("Invalid instruction detected at address {}".format(hex(address)))
 
         return instructionForm
 

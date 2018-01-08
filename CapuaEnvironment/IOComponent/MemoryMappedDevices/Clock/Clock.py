@@ -29,21 +29,21 @@ __author__ = "CSE"
 __copyright__ = "Copyright 2015, CSE"
 __credits__ = ["CSE"]
 __license__ = "GPL"
-__version__ = "1.3"
+__version__ = "2.0"
 __maintainer__ = "CSE"
 __status__ = "Dev"
 
 
 class Clock(BaseDevice):
     """
-    This device is a Clock allowing users to know the EPOCH time in seconds. It can only be read
+    This device is a Clock providing the user with a source of entropy. It can only be read
     from. A write to this device will result in a system error/exception effectively crashing
     the context that was using the Clock device.
     """
 
     def __init__(self, parentMIOC=None):
         super(Clock, self).__init__(parentMIOC=parentMIOC)
-        self.data = b"\x00" * 0xFF
+        self._data = b"\x00" * 0xFF
         self.startAddress = 0x20000100
         self.mask = 0xFFFFFF00
 
@@ -77,12 +77,12 @@ class Clock(BaseDevice):
         :param length: int, For how long
         :return: int representing the value read from the buffer
         """
-        timeData = struct.pack(">I", int(time.time()))
+        timeData = struct.pack(">I", int((time.time() * 10000000)) & 0xFFFFFFFF)
         # Get the time in place
-        self.data = timeData + self.data[4:]
+        self._data = timeData + self._data[4:]
 
         # Now get the data
-        rData = self.data[offset:offset+length]
+        rData = self._data[offset:offset + length]
         intData = struct.unpack(">I", rData)[0]
 
         return intData

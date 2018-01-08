@@ -31,7 +31,7 @@ __author__ = "CSE"
 __copyright__ = "Copyright 2015, CSE"
 __credits__ = ["CSE"]
 __license__ = "GPL"
-__version__ = "1.3"
+__version__ = "2.0"
 __maintainer__ = "CSE"
 __status__ = "Dev"
 
@@ -191,7 +191,7 @@ class StaticFlatLinker:
         foundUnresolved = False
         reference = b""
 
-        referenceRe = b":[A-Z_0-9]{1,15}:"
+        referenceRe = b":[A-Z_0-9]{1,}:"
         result = re.search(referenceRe, self.finalFileContent)
 
         if result is not None:

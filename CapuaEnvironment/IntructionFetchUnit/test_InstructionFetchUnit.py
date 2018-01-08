@@ -31,7 +31,7 @@ __author__ = "CSE"
 __copyright__ = "Copyright 2015, CSE"
 __credits__ = ["CSE"]
 __license__ = "GPL"
-__version__ = "1.3"
+__version__ = "2.0"
 __maintainer__ = "CSE"
 __status__ = "Dev"
 
@@ -76,7 +76,7 @@ class TestInstructionFetchUnit(unittest.TestCase):
         self.assertIsNone(instruction.destinationImmediate)
         self.assertIsNotNone(instruction.width)
         self.assertIsNone(instruction.flags)
-        self.assertEqual(nextInstructionAddress, MEMORY_START_AT + 2)
+        self.assertEqual(nextInstructionAddress, MEMORY_START_AT + 3)
 
 
     def test_fetchInstructionFormAtAddress(self):

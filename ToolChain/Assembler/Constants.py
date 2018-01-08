@@ -24,7 +24,7 @@ __author__ = "CSE"
 __copyright__ = "Copyright 2015, CSE"
 __credits__ = ["CSE"]
 __license__ = "GPL"
-__version__ = "1.3"
+__version__ = "2.0"
 __maintainer__ = "CSE"
 __status__ = "Dev"
 
@@ -36,6 +36,7 @@ MEMORY_REFERENCE_INDICATORS = ":"
 EXPORTED_REFERENCE_INDICATOR = ".GLOBAL"
 DATA_NUMERIC_INDICATOR = ".DATANUMERIC"
 DATA_ALPHA_INDICATOR = ".DATAALPHA"
+DATA_MEMORY_REFERENCE = ".DATAMEMREF"
 COMMENT_INDICATORS = ";"
 
 NUMERIC_DATA_INDICATOR = "int"

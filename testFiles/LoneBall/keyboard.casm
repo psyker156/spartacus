@@ -1,0 +1,125 @@
+; This file contains tables that allow for scan code to char matching.
+; Scan codes are used as offset into the scanCodeOffsetTable. The data
+; found at that offset is then used as an offset into charTable where
+; code for a specific character can be found.
+
+.global key_scanCodeOffsetTable
+.global key_scanCodeEnter
+.global key_charTable
+.global key_getCharFromCode
+
+; getCharFromCode($A=Code), return done in A
+key_getCharFromCode:
+    SHL #0x2 $A                     ; Equivalent to $A * 4 - Required since the table is 32 fields
+    MOV key_scanCodeOffsetTable $B
+    ADD $A $B                       ; This give the correct offset in scanCodeOffsetTable
+    MEMR [4] $B $A                  ; Offset into charTable is now in $A
+    SHL #0x2 $A                     ; Equivalent to $A * 4 - Required since the table is 32 fields
+    MOV key_charTable $B
+    ADD $A $B
+    MEMR [4] $B $A
+    RET
+
+
+key_scanCodeOffsetTable:
+.dataNumeric 0xff
+.dataNumeric 0xff
+.dataNumeric 0xff
+.dataNumeric 0xff
+.dataNumeric 0xff
+.dataNumeric 0xff
+.dataNumeric 0xff
+.dataNumeric 0xff
+.dataNumeric 0xff
+.dataNumeric 0xff
+.dataNumeric 0x0	; 1
+.dataNumeric 0x1	; 2
+.dataNumeric 0x2	; 3
+.dataNumeric 0x3	; 4
+.dataNumeric 0x4	; 5
+.dataNumeric 0x5	; 6
+.dataNumeric 0x6	; 7
+.dataNumeric 0x7	; 8
+.dataNumeric 0x8	; 9
+.dataNumeric 0x9	; 0
+.dataNumeric 0xff
+.dataNumeric 0xff
+.dataNumeric 0xff
+.dataNumeric 0xff
+.dataNumeric 0xa	; q
+.dataNumeric 0xb	; w
+.dataNumeric 0xc	; e
+.dataNumeric 0xd	; r
+.dataNumeric 0xe	; t
+.dataNumeric 0xf	; y
+.dataNumeric 0x10	; u
+.dataNumeric 0x11	; i
+.dataNumeric 0x12	; o
+.dataNumeric 0x13	; p
+.dataNumeric 0xff
+.dataNumeric 0xff
+.dataNumeric 0xff
+.dataNumeric 0x24   ; \n
+.dataNumeric 0x14	; a
+.dataNumeric 0x15	; s
+.dataNumeric 0x16	; d
+.dataNumeric 0x17	; f
+.dataNumeric 0x18	; g
+.dataNumeric 0x19	; h
+.dataNumeric 0x1a	; j
+.dataNumeric 0x1b	; k
+.dataNumeric 0x1c	; l
+.dataNumeric 0xff
+.dataNumeric 0xff
+.dataNumeric 0xff
+.dataNumeric 0xff
+.dataNumeric 0xff
+.dataNumeric 0x1d	; z
+.dataNumeric 0x1e	; x
+.dataNumeric 0x1f	; c
+.dataNumeric 0x20	; v
+.dataNumeric 0x21	; b
+.dataNumeric 0x22	; n
+.dataNumeric 0x23	; m
+
+key_scanCodeEnter:
+.dataNumeric 0x24
+
+key_charTable:
+.dataNumeric 0x31	; 1
+.dataNumeric 0x32	; 2
+.dataNumeric 0x33	; 3
+.dataNumeric 0x34	; 4
+.dataNumeric 0x35	; 5
+.dataNumeric 0x36	; 6
+.dataNumeric 0x37	; 7
+.dataNumeric 0x38	; 8
+.dataNumeric 0x39	; 9
+.dataNumeric 0x30	; 0
+.dataNumeric 0x71	; q
+.dataNumeric 0x77	; w
+.dataNumeric 0x65	; e
+.dataNumeric 0x72	; r
+.dataNumeric 0x74	; t
+.dataNumeric 0x79	; y
+.dataNumeric 0x75	; u
+.dataNumeric 0x69	; i
+.dataNumeric 0x6f	; o
+.dataNumeric 0x70	; p
+.dataNumeric 0x61	; a
+.dataNumeric 0x73	; s
+.dataNumeric 0x64	; d
+.dataNumeric 0x66	; f
+.dataNumeric 0x67	; g
+.dataNumeric 0x68	; h
+.dataNumeric 0x6a	; j
+.dataNumeric 0x6b	; k
+.dataNumeric 0x6c	; l
+.dataNumeric 0x7a	; z
+.dataNumeric 0x78	; x
+.dataNumeric 0x63	; c
+.dataNumeric 0x76	; v
+.dataNumeric 0x62	; b
+.dataNumeric 0x6e	; n
+.dataNumeric 0x6d	; m
+.dataNumeric 0x10   ; \n

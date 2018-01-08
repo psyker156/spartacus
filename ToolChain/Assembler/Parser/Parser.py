@@ -26,6 +26,10 @@ from CapuaEnvironment.IntructionFetchUnit.FormDescription import formDescription
 from Configuration.Configuration import REGISTER_A, \
                                         REGISTER_B, \
                                         REGISTER_C, \
+                                        REGISTER_D, \
+                                        REGISTER_E, \
+                                        REGISTER_F, \
+                                        REGISTER_G, \
                                         REGISTER_S
 from ToolChain.Assembler.Constants import REGISTER_PREFIX, \
                                           IMMEDIATE_PREFIX, \
@@ -35,6 +39,7 @@ from ToolChain.Assembler.Constants import REGISTER_PREFIX, \
                                           MEMORY_REFERENCE_INDICATORS, \
                                           DATA_ALPHA_INDICATOR, \
                                           DATA_NUMERIC_INDICATOR, \
+                                          DATA_MEMORY_REFERENCE, \
                                           EXPORTED_REFERENCE_INDICATOR
 
 import struct
@@ -43,7 +48,7 @@ __author__ = "CSE"
 __copyright__ = "Copyright 2015, CSE"
 __credits__ = ["CSE"]
 __license__ = "GPL"
-__version__ = "1.3"
+__version__ = "2.0"
 __maintainer__ = "CSE"
 __status__ = "Dev"
 
@@ -182,6 +187,9 @@ class Parser:
                 # This is a numeric data field
                 lineInstruction = struct.pack(">I", buildInstruction.sourceImmediate)
                 buildInstruction.instructionCode = 0  # Calling code expect this to be non STR for non mem ref
+            elif DATA_MEMORY_REFERENCE in buildInstruction.instructionCode:
+                lineInstruction = buildInstruction.sourceImmediate
+                buildInstruction.instructionCode = 0
             else:
                 lineInstruction = None
 
@@ -193,7 +201,8 @@ class Parser:
             A = 0x00
             B = 0x01
             C = 0x10
-            S = 0x11
+            ...
+            S = 0x1111
         Throws error if register is not A, B, C or S
         :param registerName: str, representing the register that needs translation
         :return: int, the int that represents the register
@@ -207,6 +216,14 @@ class Parser:
             registerCode = REGISTER_B
         elif registerName == "C":
             registerCode = REGISTER_C
+        elif registerName == "D":
+            registerCode = REGISTER_D
+        elif registerName == "E":
+            registerCode = REGISTER_E
+        elif registerName == "F":
+            registerCode = REGISTER_F
+        elif registerName == "G":
+            registerCode = REGISTER_G
         elif registerName == "S":
             registerCode = REGISTER_S
         else:
@@ -297,7 +314,7 @@ class Parser:
         foundSource = False  # Found source operand
         foundDestination = False  # Keep us from abusive operation
 
-        if (len(line) == 1 and MEMORY_REFERENCE_INDICATORS == line[0][-1]) or COMMENT_INDICATORS == line[0][0]:
+        if (MEMORY_REFERENCE_INDICATORS == line[0][-1]) or COMMENT_INDICATORS == line[0][0]:
             # This is no code line... No need for further work, return!
             # We keep the comment indicator so we can later discard the instruction.
             # Put text into instructionCode since this is an impossible case... Easy to
@@ -335,13 +352,22 @@ class Parser:
             buildInstruction.instructionLength = len(alpha)
             buildInstruction.instructionCode = line[0].upper()
             return
+        if DATA_MEMORY_REFERENCE in buildInstruction.operationMnemonic:
+            # This is a memory reference used as a constant that needs to be
+            # linked later in the process.
+            if line[1][0] == ":":
+                line[1] = line[1][1:]
+            buildInstruction.sourceImmediate = (":" + line[1] + ":").upper().encode("utf-8")
+            buildInstruction.instructionLength = 4
+            buildInstruction.instructionCode = DATA_MEMORY_REFERENCE
+            return
 
         # We don't want to redo the first part. That would cause problem with in code memory references.
         for part in line[1:]:
             if part[0] is COMMENT_INDICATORS:
                 break  # We are done with this line of code, we found a comment
 
-            if part[0] is FLAGS_INDICATORS[0]:
+            elif part[0] is FLAGS_INDICATORS[0]:
                 if part[-1] is FLAGS_INDICATORS[-1]:
                     # This is FLAGS Indicator!!
                     buildInstruction.flags = self.translateTextFlagsToCodeFlags(part[1:-1])
@@ -350,7 +376,7 @@ class Parser:
                                                                                           FLAGS_INDICATORS[-1]))
                 continue
 
-            if part[0] is WIDTH_INDICATORS[0]:
+            elif part[0] is WIDTH_INDICATORS[0]:
                 if part[-1] is WIDTH_INDICATORS[-1]:
                     # This is WIDTH Indicator!!
                     buildInstruction.width = self.translateTextImmediateToImmediate(part[1:-1])  # Reusing immediate logic
@@ -359,7 +385,7 @@ class Parser:
                                                                                           WIDTH_INDICATORS[-1]))
                 continue
 
-            if part[0] is REGISTER_PREFIX:
+            elif part[0] is REGISTER_PREFIX:
                 # This is a register
                 if not foundSource:
                     foundSource = True
@@ -371,7 +397,7 @@ class Parser:
                     buildInstruction.destinationRegister = self.translateRegisterNameToRegisterCode(part[1:])
                 continue
 
-            if part[0] is IMMEDIATE_PREFIX:
+            elif part[0] is IMMEDIATE_PREFIX:
                 # This is an immediate
                 if not foundSource:
                     foundSource = True
@@ -383,19 +409,19 @@ class Parser:
                     buildInstruction.destinationImmediate = self.translateTextImmediateToImmediate(part[1:])
                 continue
 
-            if part[0] is MEMORY_REFERENCE_INDICATORS:
+            else:
                 # This is a memory reference to be treated as an immediate
+                if part[0] == ":":
+                    part = part[1:]
                 if not foundSource:
                     foundSource = True
-                    buildInstruction.sourceImmediate = part.upper() + MEMORY_REFERENCE_INDICATORS
+                    buildInstruction.sourceImmediate = MEMORY_REFERENCE_INDICATORS+ part.upper() + MEMORY_REFERENCE_INDICATORS
                 else:
                     if foundDestination:
                         raise ValueError("Invalid operation format")
                     foundDestination = True
-                    buildInstruction.destinationImmediate = part.upper() + MEMORY_REFERENCE_INDICATORS
+                    buildInstruction.destinationImmediate = MEMORY_REFERENCE_INDICATORS + part.upper() + MEMORY_REFERENCE_INDICATORS
                 continue
-
-            raise ValueError("Unexpected code line format detected {}".format(line))
 
     def _findPossibleCodesForInstruction(self, partialInstruction: Instruction=None):
         """

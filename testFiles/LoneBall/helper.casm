@@ -1,0 +1,80 @@
+; This file contains various functions made to ease the programming
+
+.global helper_saveRegs
+.global helper_restoreRegs
+.global helper_integerToAlpha
+.global helper_stringLength
+
+; helper_saveRegs()
+; Use of this function to save all registers (but not $S-$A-$B-$C at the same time
+; use of this function NEEDS to be perfectly balanced with helper_restoreRegs
+helper_saveRegs:
+    PUSH $D
+    PUSH $E
+    PUSH $F
+    PUSH $G
+    SUB #16 $S
+    MEMR [4] $S $D
+    ADD #20 $S
+    MEMW [4] $D $S
+    RET
+
+; helper_restoreRegs($A=xpos, $C=ypos, $D=char)
+; Use this function to restore all registers save by the helper_saveRegs function
+; use of this function NEEDS to be perfectly balanced with helper_saveRegs
+helper_restoreRegs:
+    MEMR [4] $S $D
+    SUB #20 $S
+    MEMW [4] $D $S
+    ADD #16 $S
+    POP $G
+    POP $F
+    POP $E
+    POP $D
+    RET
+
+; helper_integerToAlpha($A=intvalue, $C=destBuffer)
+; Use this function to translate a numeric value to text to be used for display
+helper_integerToAlpha:
+    PUSH $E
+    PUSH $D
+    PUSH $F
+    XOR $F $F
+    MOV #10 $D      ; Conversion do decimal
+itoa_loop:
+    DIV $A $D
+    MOV #48 $E      ; Code for char '0'
+    ADD $B $E
+    ADD #1 $F
+    PUSH $E
+    CMP #0 $A
+    JMP <LH> itoa_loop
+itoa_ordering_loop:
+    POP $E          ; Just a quick trick to get the string in the correct order
+    MEMW [1] $E $C
+    ADD #1 $C
+    SUB #1 $F
+    CMP #0 $F
+    JMP <L> itoa_ordering_loop
+    MEMW [1] #0 $C  ; String termination
+    POP $F
+    POP $D
+    POP $E
+    RET
+
+; helper_stringLength($A=PointerToString) return string length in $A
+helper_stringLength:
+    PUSH $D                     ; Save $D since only A B C are volatile
+    XOR $D $D
+    MOV $A $B
+sl_oneMoreChar:
+    MEMR [1] $B $C
+    CMP #0 $C                   ; Check for string termination
+    JMP <E> sl_GotLength       ; Found end of string
+    ADD #1 $D                   ; Increment length
+    ADD #1 $B                   ; Increment buffer position
+    JMP <> sl_oneMoreChar
+sl_GotLength:
+    MOV $D $A
+    POP $D
+    RET

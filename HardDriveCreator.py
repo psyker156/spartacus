@@ -20,80 +20,70 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 """
 
-from GameOverlay.Arena import Arena
-from GameOverlay.GameManager import GameManager
+from Configuration.Configuration import HARD_DRIVE_SECTOR_SIZE, \
+                                        HARD_DRIVE_MAX_SIZE
 
 import argparse
 import os
 
 __author__ = "CSE"
-__copyright__ = "Copyright 2015, CSE"
+__copyright__ = "Copyright 2017, CSE"
 __credits__ = ["CSE"]
 __license__ = "GPL"
-__version__ = "1.3"
+__version__ = "2.0"
 __maintainer__ = "CSE"
 __status__ = "Dev"
 
 
 def parseCommandLineArgs():
     """
-    This simply parses the command line so we can get both players file information
+    As implied by the name, this will parse the command line arguments so we can use them. Important note,
+    after this function is called, no need to use the "extension" attribute since this one is concatenated
+    with the "output". This results in cleaner code since those two are always(? most of the time at least)
+    used together.
     :return: A parsed object as provided by argparse.parse_args()
     """
-    parser = argparse.ArgumentParser(prog="Game.py",
-                                     description="Capua Assembler Version {}".format(__version__,),
+    parser = argparse.ArgumentParser(prog="HardDriveCreator.py",
+                                     description="Capua Hard Drive Creator Version {}".format(__version__,),
                                      epilog="This tool is provided as part of Spartacus learning environment under {} "
                                             "licence. Feel free to distribute, modify, "
                                             "contribute and learn!".format(__license__,))
-    parser.add_argument("-1", "--p1",
-                        required=True,
-                        nargs=1,
-                        type=str,
-                        help="Define the player 1 binary file to be loaded")
 
-    parser.add_argument("-2", "--p2",
+    parser.add_argument("-o", "--output",
                         required=True,
                         nargs=1,
                         type=str,
-                        help="Define the player 2 binary file to be loaded")
+                        help="Define the output where the hard drive file is to be created")
 
     args = parser.parse_args()
-    args.p1 = os.path.abspath(args.p1[0])  # This originally come out as a list
-    args.p2 = os.path.abspath(args.p2[0])
+    args.output = args.output[0]
 
     return args
 
 
 def validatePaths(argsWithPaths):
     """
-    This function will simply validate that both paths exists
+    This function will simply validate that the input path exists
     :param argsWithPaths: An input parsed object as provided by argparse.parse_args()
     :return: This does not return. Simply raises ValueError in cases where paths are not valid.
     """
-    if not os.path.exists(argsWithPaths.p1):
-        raise ValueError("ERROR: file {} does not exists.".format(argsWithPaths.p1,))
-    if not os.path.exists(argsWithPaths.p2):
-        raise ValueError("ERROR: file {} does not exists.".format(argsWithPaths.p2,))
+    if os.path.exists(argsWithPaths.output):
+        raise ValueError("ERROR: file {} already exists.".format(argsWithPaths.output,))
 
 
 if __name__ == '__main__':
     usableArgs = parseCommandLineArgs()
-    # import pdb; pdb.set_trace()
+    print(usableArgs)
     validatePaths(usableArgs)  # Make sure the parsed info is usable before using it!
 
-    print("Game about to begin, following options will be used")
-    print("  Player 1 file:             {}".format(usableArgs.p1,))
-    print("  Player 2 file:             {}".format(usableArgs.p2,))
+    print("Hard drive creation about to begin, following options will be used")
+    print("  output file:            {}".format(usableArgs.output,))
 
-    p1UsableName = usableArgs.p1.split("\\")[-1]
-    p1UsableName = p1UsableName.split(".")[0]
+    f = open(usableArgs.output, "wb")
+    for i in range(0, HARD_DRIVE_MAX_SIZE):
+        f.write(b"\x00" * HARD_DRIVE_SECTOR_SIZE)
+    f.close()
 
-    p2UsableName = usableArgs.p2.split("\\")[-1]
-    p2UsableName = p2UsableName.split(".")[0]
-
-    arena = Arena()
-    arena.displayFirstInterface(p1=p1UsableName, p2=p2UsableName)
-
-    gm = GameManager(p1File=usableArgs.p1, p1Name=p1UsableName, p2File=usableArgs.p2, p2Name=p2UsableName)
-
-
+    if os.path.exists(usableArgs.output):
+        # The assembler did the job correctly and the out file has been written to disk!
+        print("Hard drive creation done, output file has been written to {}". format(usableArgs.output,))

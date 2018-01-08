@@ -1,0 +1,109 @@
+; This is CAPUA's firmware. It will load the first block from the disk. Validate the magic value and
+; jump (through IRET on disk handler) to it. After the jump, boot is "done" and user code is in
+; execution.
+.global start:
+
+start:
+MOV :readBuffer $S
+ADD #1024 $S
+MOV :vector $A
+SIVR $A
+ACTI
+
+; displayText($A=line, $C=text, $D=len)
+MOV #0 $A
+MOV :welcome $C
+MOV #38 $D
+CALL :diplayText
+
+MOV #0x20000400 $A
+MEMW [4] #0x0 $A    ; Set read action
+ADD #4 $A
+MEMW [4] #0x0 $A    ; Set LBA
+ADD #4 $A
+MEMW [4] :readBuffer $A ; Set destination buffer
+ADD #4 $A
+MEMW [4] #0x01 $A   ; Set the trigger
+
+
+; This loop wait until the disk load is done
+waitLoop:
+NOP
+JMP <> :waitLoop
+
+errorCode:
+MOV #2 $A
+MOV :error $C
+MOV #26 $D
+CALL :diplayText
+JMP <> :waitLoop
+
+clockHandler:
+HIRET
+
+keyboardHandler:
+HIRET
+
+hardDriveReadHandler:
+MOV :readBuffer $A
+ADD #510 $A
+MEMR [1] $A $B
+CMP #0x55 $B    ; First part of the magic number
+JMP <LH> :errorCode
+ADD #1 $A
+MEMR [1] $A $B
+CMP #0xAA $B
+JMP <LH> :errorCode
+XOR $A $A
+MOV #0x40000000 $B
+MOV :readBuffer $C
+copyLoop:
+MEMR [4] $C $E
+MEMW [4] $E $B
+ADD #4 $A
+ADD #4 $B
+ADD #4 $C
+CMP #512 $A
+JMP <H> :copyLoop
+MOV #2 $A
+MOV :loadDone $C
+MOV #34 $D
+CALL :diplayText
+POP $A              ; Forcing return into newly loaded code
+PUSH #0x40000000
+HIRET
+
+hardDriveWriteHandler:
+HIRET
+
+; displayText($A=line, $C=text, $D=len)
+diplayText:
+XOR $E $E
+MOV #80 $F
+MUL $F $A
+ADD #0x20001000 $A
+printLoop:
+MEMR [1] $C $G
+MEMW [1] $G $A
+ADD #1 $A
+ADD #1 $C
+SUB #1 $D
+CMP #0 $D
+JMP <LH> :printLoop
+RET
+
+welcome:
+.dataAlpha CAPUA VM booting from disk in progress
+loadDone:
+.dataAlpha Done loading information from disk
+error:
+.dataAlpha Disk image is not valid...
+
+vector:
+.dataMemRef :clockHandler
+.dataMemRef :keyboardHandler
+.dataMemRef :hardDriveReadHandler
+.dataMemRef :hardDriveWriteHandler
+
+readBuffer:
+end:

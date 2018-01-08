@@ -24,7 +24,7 @@ __author__ = "CSE"
 __copyright__ = "Copyright 2015, CSE"
 __credits__ = ["CSE"]
 __license__ = "GPL"
-__version__ = "1.3"
+__version__ = "2.0"
 __maintainer__ = "CSE"
 __status__ = "Dev"
 
@@ -34,14 +34,34 @@ MEMORY_ARRAY_NUMBER_OF_MEMORY_CELL = 0x100000  # 1 048 576 memory cells = 1 Meg
 MEMORY_END_AT = MEMORY_START_AT + MEMORY_ARRAY_NUMBER_OF_MEMORY_CELL
 MEMORY_CELL_INITIAL_VALUE = 0XFF  # NOP operation
 
-CAPUA_NUMBER_OF_CORE = 0x04     # How many execution units are running in the Capua environment
-CAPUA_SYSTEM_CORE_SPEED = 0x0F  # How many unit of execution a system core can run when it is tasked
-CAPUA_PLAYER_CORE_SPEED = 0x04  # How many unit of execution a player core can run when tasked
+REGISTER_A = 0b0000
+REGISTER_B = 0b0001
+REGISTER_C = 0b0010
+REGISTER_D = 0b0011
+REGISTER_E = 0b0100
+REGISTER_F = 0b0101
+REGISTER_G = 0b0110
 
-SPARTACUS_MAXIMUM_CONTEXT = 3   # What is the maximum number of context a player can have
+REGISTER_S = 0b1111
 
-REGISTER_A = 0b00
-REGISTER_B = 0b01
-REGISTER_C = 0b10
-REGISTER_S = 0b11
+DISPLAY_REFRESH_RATE = 5      # This is in milliseconds
+DISPLAY_FONT_SIZE = 12
+
+KEYBOARD_REFRESH_RATE = 5      # This is in milliseconds
+KEYBOARD_BUFFER_SIZE = 20       # How big is the keyboard buffer (scan code buffer)
+
+HARD_DRIVE_FILE_PATH = "HD.bin"
+HARD_DRIVE_SECTOR_SIZE = 512
+HARD_DRIVE_MAX_SIZE = 2048    # Size is given in sectors!!! 2048 sectors of 512 bytes each = 1MB
+
+INTERRUPT_CLOCK = 0x00
+INTERRUPT_KEYBOARD = 0x01
+INTERRUPT_HARD_DRIVE_DONE_READ = 0x02
+INTERRUPT_HARD_DRIVE_DONE_WRITE = 0x03
+
+DEBUGGER_WAKEUP_TICK_COUNT = 0    # Used to keep debugger "in control"
+
+VIRTUAL_BOOT_ENABLED = True       # This will enforce booting from the "hard drive" by using the "firmware"
+FIRMWARE_LOAD_ADDRESS = 0x40001000      # Firmware will be loaded at this address when using virtual boot
+FIRMWARE_BINARY_FILE_PATH = "CapuaEnvironment/firmware.bin"
 

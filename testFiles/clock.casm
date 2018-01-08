@@ -1,8 +1,0 @@
-; This is a simple Clock access test
-.global start:
-
-start:
-    MOV #0x20000100 $A 	; This is the address of the memory mapped clock
-    MEMR [4] $A $B		; At this point, the time will be in register B
-    NOP
-end:

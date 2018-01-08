@@ -29,7 +29,7 @@ __author__ = "CSE"
 __copyright__ = "Copyright 2015, CSE"
 __credits__ = ["CSE"]
 __license__ = "GPL"
-__version__ = "1.3"
+__version__ = "2.0"
 __maintainer__ = "CSE"
 __status__ = "Dev"
 
@@ -101,7 +101,7 @@ class TestInstruction(unittest.TestCase):
         self.assertEqual(ins.instructionLength, 6)
         self.assertEqual(ins.operationMnemonic, "MEMW")
 
-        ins = Instruction(0b00010000 << 8 * 1,
+        ins = Instruction(0b00010000 << 16 * 1,
                           formDescription["InsWidthRegReg"])
         self.assertIsNotNone(ins.instructionCode)
         self.assertIsNotNone(ins.sourceRegister)
@@ -110,7 +110,7 @@ class TestInstruction(unittest.TestCase):
         self.assertIsNone(ins.destinationImmediate)
         self.assertIsNotNone(ins.width)
         self.assertIsNone(ins.flags)
-        self.assertEqual(ins.instructionLength, 2)
+        self.assertEqual(ins.instructionLength, 3)
         self.assertEqual(ins.operationMnemonic, "MEMR")
 
         ins = Instruction(0b00100000 << 8 * 5,

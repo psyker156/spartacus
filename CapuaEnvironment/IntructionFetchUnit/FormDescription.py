@@ -24,15 +24,18 @@ __author__ = "CSE"
 __copyright__ = "Copyright 2015, CSE"
 __credits__ = ["CSE"]
 __license__ = "GPL"
-__version__ = "1.3"
+__version__ = "2.0"
 __maintainer__ = "CSE"
 __status__ = "Dev"
 
 formDescription = {
     "Ins": {
         'typeCode': 0b1111,
-        'listing': [0b0000,  # RET
-                    0b1111], # NOP
+        'listing': [0b0000,   # RET
+                    0b0001,   # ACTI
+                    0b0010,   # DACTI
+                    0b0011,   # HIRET
+                    0b1111],  # NOP
         'description': {
             "instructionCode": 0b11111111
         },
@@ -40,11 +43,13 @@ formDescription = {
     },
     "InsReg": {
         'typeCode': 0b0111,
-        'listing': [0b0000,  # NOT
-                    0b0001,  # SNT - This is not implemented, DO NOT USE
-                    0b0010,  # CALL
-                    0b0011,  # PUSH
-                    0b0100], # POP
+        'listing': [0b0000,   # NOT
+                    0b0001,   # SNT - This is not implemented, DO NOT USE
+                    0b0010,   # CALL
+                    0b0011,   # PUSH
+                    0b0100,   # POP
+                    0b0101,   # SIVR
+                    0b0110],  # INT
         'description': {
             "instructionCode": 0b1111111100000000,
             "sourceRegister": 0b0000000011111111
@@ -53,9 +58,10 @@ formDescription = {
     },
     "InsImm": {
         'typeCode': 0b1000,
-        'listing': [0b0000,  # SNT - This is not implemented, DO NOT USE
-                    0b0001,  # PUSH
-                    0b0010], # CALL
+        'listing': [0b0000,   # SNT - This is not implemented, DO NOT USE
+                    0b0001,   # PUSH
+                    0b0010,   # CALL
+                    0b0011],  # INT
         'description': {
             "instructionCode": 0b1111111100000000000000000000000000000000,
             "sourceImmediate": 0b0000000011111111111111111111111111111111
@@ -64,15 +70,15 @@ formDescription = {
     },
     "InsImmReg": {
         'typeCode': 0b0110,
-        'listing': [0b0000,  # MOV
-                    0b0001,  # AND
-                    0b0010,  # OR
-                    0b0011,  # XOR
-                    0b0100,  # SHR
-                    0b0101,  # SHL
-                    0b0110,  # ADD
-                    0b0111,  # SUB
-                    0b1000], # CMP
+        'listing': [0b0000,   # MOV
+                    0b0001,   # AND
+                    0b0010,   # OR
+                    0b0011,   # XOR
+                    0b0100,   # SHR
+                    0b0101,   # SHL
+                    0b0110,   # ADD
+                    0b0111,   # SUB
+                    0b1000],  # CMP
         'description': {
             "instructionCode": 0b111111110000000000000000000000000000000000000000,
             "sourceImmediate": 0b000000001111111111111111111111111111111100000000,
@@ -82,8 +88,8 @@ formDescription = {
     },
     "InsWidthImmReg": {
         'typeCode': 0b0000,
-        'listing': [0b0000,  # MEMW
-                    0b0001], # MEMR
+        'listing': [0b0000,   # MEMW
+                    0b0001],  # MEMR
         'description': {
             "instructionCode": 0b111111110000000000000000000000000000000000000000,
             "width": 0b000000001111000000000000000000000000000000000000,
@@ -94,15 +100,15 @@ formDescription = {
     },
     "InsWidthRegReg": {
         'typeCode': 0b0001,
-        'listing': [0b0000,  # MEMR
-                    0b0001], # MEMW
+        'listing': [0b0000,   # MEMR
+                    0b0001],  # MEMW
         'description': {
-            "instructionCode": 0b1111111100000000,
-            "width": 0b0000000011110000,
-            "sourceRegister": 0b0000000000001100,
-            "destinationRegister": 0b0000000000000011
+            "instructionCode": 0b111111110000000000000000,
+            "width": 0b000000001111000000000000,
+            "sourceRegister": 0b000000000000111100000000,
+            "destinationRegister": 0b000000000000000000001111
         },
-        "length": 2
+        "length": 3
     },
     "InsWidthRegImm": {
         'typeCode': 0b0010,
@@ -117,7 +123,7 @@ formDescription = {
     },
     "InsWidthImmImm": {
         'typeCode': 0b0011,
-        'listing': [0b0000], # MEMW
+        'listing': [0b0000],  # MEMW
         'description': {
             "instructionCode": 0b11111111000000000000000000000000000000000000000000000000000000000000000000000000,
             "width": 0b00000000111111110000000000000000000000000000000000000000000000000000000000000000,
@@ -128,8 +134,9 @@ formDescription = {
     },
     "InsFlagImm": {
         'typeCode': 0b0100,
-        'listing': [0b0000,  # JMPR
-                    0b0001], # JMP
+        'listing': [0b0000,   # JMPR
+                    0b0001,   # JMP
+                    0b0010],  # SFSTOR
         'description': {
             "instructionCode": 0b111111110000000000000000000000000000000000000000,
             "flags": 0b000000001111111100000000000000000000000000000000,
@@ -139,8 +146,9 @@ formDescription = {
     },
     "InsFlagReg": {
         'typeCode': 0b0101,
-        'listing': [0b0000,  # JMPR
-                    0b0001], # JMP
+        'listing': [0b0000,   # JMPR
+                    0b0001,   # JMP
+                    0b0010],  # SFSTOR
         'description': {
             "instructionCode": 0b1111111100000000,
             "flags": 0b0000000011110000,
@@ -150,17 +158,17 @@ formDescription = {
     },
     "InsRegReg": {
         'typeCode': 0b1001,
-        'listing': [0b0000,  # XOR
-                    0b0010,  # ADD
-                    0b0011,  # SUB
-                    0b0100,  # MUL
-                    0b0101,  # DIV
-                    0b0110,  # SHL
-                    0b0111,  # AND
-                    0b1000,  # OR
-                    0b1001,  # SHR
-                    0b1010,  # CMP
-                    0b1011], # MOV
+        'listing': [0b0000,   # XOR
+                    0b0010,   # ADD
+                    0b0011,   # SUB
+                    0b0100,   # MUL
+                    0b0101,   # DIV
+                    0b0110,   # SHL
+                    0b0111,   # AND
+                    0b1000,   # OR
+                    0b1001,   # SHR
+                    0b1010,   # CMP
+                    0b1011],  # MOV
         'description': {
             "instructionCode": 0b1111111100000000,
             "sourceRegister": 0b0000000011110000,

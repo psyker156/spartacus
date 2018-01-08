@@ -1,0 +1,8 @@
+#!/bin/bash
+
+python3 ../../Assembler.py -i LoneBall.casm -o LoneBall.o
+python3 ../../Assembler.py -i keyboard.casm -o keyboard.o
+python3 ../../Assembler.py -i helper.casm -o helper.o
+python3 ../../Assembler.py -i display.casm -o display.o
+
+python3 ../../Linker.py -i LoneBall.o keyboard.o helper.o display.o -o LoneBall.bin

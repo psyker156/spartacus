@@ -1,0 +1,39 @@
+; This is a hello world file for Capua
+.global start
+
+start:
+    MOV end $S
+    MOV #0 $A
+    MOV hello $C
+    MOV #12 $d
+    CALL display_Line
+
+endLessLoop:
+    JMP <> endLessLoop
+
+hello:
+.dataAlpha Hello World!
+
+; display_Line($A=line, $C=text, $D=len)
+display_Line:
+    PUSH $E
+    PUSH $F
+    PUSH $G
+    XOR $E $E
+    MOV #80 $F
+    MUL $F $A
+    ADD #0x20001000 $A
+dl_print_loop:
+    MEMR [1] $C $G
+    MEMW [1] $G $A
+    ADD #1 $A
+    ADD #1 $C
+    SUB #1 $D
+    CMP #0 $D
+    JMP <LH> dl_print_loop
+    POP $G
+    POP $F
+    POP $E
+    RET
+
+end:

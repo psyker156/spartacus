@@ -26,7 +26,7 @@ __author__ = "CSE"
 __copyright__ = "Copyright 2015, CSE"
 __credits__ = ["CSE"]
 __license__ = "GPL"
-__version__ = "1.3"
+__version__ = "2.0"
 __maintainer__ = "CSE"
 __status__ = "Dev"
 
@@ -43,10 +43,22 @@ class BaseDevice:
     startAddress = 0x00000000  # This is the address where the device will be mapped in memory
                                # obviously, this is different for every devices.
     mask = 0x00  # This indicate the memory range for this device. Think of this as a subnet mask in IPv4.
-    data = None  # To be initialised by a device doing b"\x00" * maskValue
+    _data = None  # To be initialised by a device doing b"\x00" * maskValue
+
+    _interruptGenerator = False  # This is used to indicate that this device will be a source of interruption
+    _interruptNumber = None      # This will be used to hold the interrupt mapping for a device
+
+    _shutdownProcedureInAction = False   # When this is True, the devices need to terminate any running threads
 
     def __init__(self, parentMIOC=None):
         self._parentMIOC = parentMIOC
+
+    def prepareForShutdown(self):
+        """
+        This to indicate to a device that it needs to prepare for core shutdown procedure.
+        :return:
+        """
+        self._shutdownProcedureInAction = True
 
     def takeAction(self, address=None, length=None, value=None, isWrite=False, source="System"):
         """
@@ -79,9 +91,15 @@ class BaseDevice:
         :return: int representing the value read from the buffer
         """
 
+        intData = None
         # Get the data
-        rData = self.data[offset:offset+length]
-        intData = struct.unpack(">I", rData)[0]
+        rData = self._data[offset:offset + length]
+        if length == 4:
+            intData = struct.unpack(">I", rData)[0]
+        elif length == 1:
+            intData = struct.unpack(">B", rData)[0]
+        else:
+            raise RuntimeError("Device memory read with invalid length - Should be 1 or 4")
 
         return intData
 
@@ -100,11 +118,11 @@ class BaseDevice:
         readyData = struct.pack(">I", value)
 
         # Now write the data
-        dataFirstPart = self.data[0:offset]
+        dataFirstPart = self._data[0:offset]
         dataMiddlePart = readyData[-length:]
-        dataLastPart = self.data[offset+length:]
+        dataLastPart = self._data[offset + length:]
 
-        self.data = dataFirstPart + dataMiddlePart + dataLastPart
+        self._data = dataFirstPart + dataMiddlePart + dataLastPart
 
         self._memoryAction(source=source)
 
@@ -119,7 +137,6 @@ class BaseDevice:
         :return:
         """
         raise ValueError("Device _memoryAction needs to be implemented before it is used.")
-
 
     def _translateAddressToOffset(self, address=None):
         """
@@ -138,7 +155,7 @@ class BaseDevice:
         :param length: int, for how long
         :return: Nothing, but throws exception in case of out of bound access
         """
-        if (offset + length) > len(self.data):
+        if (offset + length) > len(self._data):
             raise MemoryError("Device - out of bound memory access detected!")
 
         if 0 >= length > 4:
