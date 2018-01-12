@@ -171,6 +171,7 @@ class TestExecutionUnit(unittest.TestCase):
         dataWritten = self.mioc.memoryReadAtAddressForLength(MEMORY_START_AT + 20, length=4)
         self.assertEqual(MEMORY_START_AT + 2, self.eu.I)
         self.assertEqual(0xCCCCCCCC, dataWritten)
+        self.assertEqual(0b10, self.eu.FLAGS)
 
         # SFSTOR - Data will NOT be written
         self.eu.setupCore(MEMORY_START_AT)
@@ -184,6 +185,7 @@ class TestExecutionUnit(unittest.TestCase):
         dataWritten = self.mioc.memoryReadAtAddressForLength(MEMORY_START_AT + 20, length=4)
         self.assertEqual(MEMORY_START_AT + 2, self.eu.I)
         self.assertNotEqual(0xBBBBBBBB, dataWritten)
+        self.assertEqual(0b1, self.eu.FLAGS)
 
         # SIVR
         self.eu.setupCore(MEMORY_START_AT)

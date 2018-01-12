@@ -927,6 +927,9 @@ class LogicUnit:
         # Need to make $A be the initial $A again
         self.eu.setRegisterValue(REGISTER_A, destinationPointer)
 
+        # Flags after cmp instruction
+        cmpFlags = self.eu.FLAGS
+
         # if this succeeds, we can move forward with the memory write
         # As strange as the next conditional looks, the second part is for
         # unconditional set detection.
@@ -939,7 +942,7 @@ class LogicUnit:
 
         self.ci = sfstorInstruction
         # Need to return the current FLAGS as these would be overwritten upon return of this method.
-        return self.eu.FLAGS
+        return cmpFlags
 
     def SHL(self, hardware=False):
         """
