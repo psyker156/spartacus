@@ -32,23 +32,23 @@ Spartacus is the whole project. Capua is the virtual environment.
 * Multiple instructions have been added: 
     * **ACTI, DACTI, HIRET, INT, SFSTOR, SIVR**
     * These allow for the minimum required for operating system development
-* Capua now have 8 general purpose registers (GPRs)
+* Capua now have 16 general purpose registers (GPRs)
     * This addition forced a change in machine code. Code assembled and linked
-    with previous version of the tool chain will not run properly on Capua V. 2.0.
+    with previous version of the tool chain will not run properly on Capua V. 2.0
 * Support for multiple hardware elements was added:
-    * Hard drive, Interrupt clock and Terminal.
-* Every hardware elements that was highly tied with the game environment was removed.
-* The game environment has been removed from the project.
+    * Hard drive, Interrupt clock and Terminal
+* Every hardware elements that was highly tied with the game environment was removed
+* The game environment has been removed from the project
 
 ## Capua
 Capua is a load/store architecture. This means that only load (**MEMR**) and store (**MEMW**) 
 instructions can do memory access. Stack related instructions also have access to
 memory but in a much stricter way.
 ## Registers
-Capua now have 8 GPRs named from **A** to **G** and then **S**. The **S**
+Capua now have 8 GPRs named from **A** to **H**, **J** to **P**, and then **S**. The **S**
 GPR is intended to be used as a stack register. All registers are 32 bits wide. The
 instruction pointer is named **I** and is not user accessible. A flag register named **FLAGS**
-is used by the core but is also no user accessible. 
+is used by the core but is also not user accessible. 
 ## Memory
 At the current time, no memory management unit or equivalent device is available to the
 Capua environment. We are working on this and one should be available in a soon to be
@@ -164,18 +164,18 @@ immediate value or with a register
 
 >**INT $A**
 ### JMP
-The jump instruction allows to skip parts of the
+The jump instruction allows the user to skip parts of the
 code either unconditionally or conditionally by
 looking at the FLAGS register value. This instruction
-is special in the sense that it use a flag indicator to
+is special in the sense that it uses a flag indicator to
 allow the user to select the conditions where the
 jump should be taken. Next is a listing of the
 possible conditions:
 
-* <> Jump is always taken.
-* <E> or <Z> Jump is taken if 0b100 is set (E Flag).
-* <L> Jump is taken if 0b010 is set (L Flag).
-* <H> Jump is taken if 0b001 is set (H Flag).
+* <> Jump is always taken
+* <E> or <Z> Jump is taken if 0b100 is set (E Flag)
+* <L> Jump is taken if 0b010 is set (L Flag)
+* <H> Jump is taken if 0b001 is set (H Flag)
 
 These flags indicators can be combined to form
 complex conditions. For example, the <LE>
@@ -225,7 +225,7 @@ immediate but must be a valid memory address.
 ### MOV
 The MOV instruction allows for data displacement
 between register or for loading a register with an
-immediate value. This instruction could be use, by
+immediate value. This instruction could be used, for
 example, to set the stack pointer S to a valid
 memory region in order for the stack to be usable.
 >**MOV #0x40000200 $S**
@@ -236,7 +236,7 @@ The MUL instruction allows for integer multiplication
 between two registers. It is not possible to use the
 MUL instruction with an immediate value. Since
 multiplication can result in numbers that are bigger
-than 32 bits, the B register hold the higher 32 bits
+than 32 bits, the B register holds the higher 32 bits
 and the A register holds the lower 32 bits of the
 resulting number. The number should read as B:A
 after the multiplication.
@@ -245,7 +245,7 @@ after the multiplication.
 The NOP instruction is the no operation instruction.
 It does nothing. Since Capua does not need to be 4
 bytes aligned, the NOP instruction is typically
-useless. However, it can be use to fil the memory at
+useless. However, it can be use to fill the memory at
 boot time in order to ease development.
 >**NOP**
 ### NOT
@@ -311,7 +311,7 @@ change the flags according to the result of the comparison. The order of the com
 
 This instruction aims at making it possible for a programmer to write thread synchronisation code like mutexes.
 ### SHL
-The SHL instruction mnemonic stand for SHift
+The SHL instruction mnemonic stands for SHift
 Left. It allows its user to shift the value of a register
 X bits to the left where X is a number from 1 to 8.
 The exceeding values are simply lost. As an
@@ -331,7 +331,7 @@ a one-bit right shift applied to the value
 >**SHR $B $A**
 ### SIVR
 This instruction means Set Interrupt Vector Register. This is used to configure the interrupt vector pointer.
-It must be configured to point to a valid vector of handling routines addresses. It can only be used
+It must be configured to point to a valid vector of handling routine addresses. It can only be used
 with a register.
 >**SIVR $A**
 
@@ -366,7 +366,7 @@ end:
 ```
 ### SUB
 The SUB instruction allows for subtracting values. It
-is important to understand that the operation work
+is important to understand that the operation works
 like this:
 * destination = destination - source
 
@@ -379,7 +379,7 @@ format, integer numbers.
 >**SUB $B $A**
 ### XOR
 The XOR instruction is a bitwise operation, just like
-the AND and OR instruction. It follows the normal
+the AND and OR instructions. It follows the normal
 XOR logic and has the following truth table:
 
 * 1 xor 1 = 0
@@ -427,8 +427,8 @@ written as a testing tool for Capua. Be extra careful to
 fully respect the syntax described here since error
 messages might not always be easy to understand.
 Also, in it’s current state, the assembler is very
-“typo” sensitive. Every part of an instruction need
-to be separated by a white space. This include end
+“typo” sensitive. Every part of an instruction needs
+to be separated by a white space. This includes the end
 of line comment:
 >**MOV $A $B;This is not good enough**
 
@@ -463,7 +463,7 @@ directives. These directives are to be used when writing code.
     immediate could be used. Note that to use
     the symbol name in code No “:” is
     required after the symbol name when using
-    the name in code.For example:
+    the name in code. For example:
     **MOV stackAddress $A**
     Would result in the linked address of
     :stackAddress being put as an immediate
@@ -473,17 +473,17 @@ directives. These directives are to be used when writing code.
 * ".global symbolName"
     * Will allow the assembler to add a symbol to
     the external symbols list. This ultimately allows the linker to use this symbol
-    for linking with external files.
+    for linking with external files
 * ";"
     * The “;” character, like in many other
-    assembly language, indicates a comment.
+    assembly languages, indicates a comment.
     These can either be on a line of their own or
     at the end of a line, after an instruction.
     Please note that, in case a comment is put
     after an instruction, a space must separate
     the end of the instruction from the
     beginning of the comment (the “;”
-    character).
+    character)
 * ".dataAlpha"
     * This can be used anywhere as long as it sits
     on a line of it’s own. This directive is
@@ -502,19 +502,19 @@ directives. These directives are to be used when writing code.
     * This is similar to .dataNumeric except that it
     allows the programmer to specify a memory reference.
     When the code is linked, the memory reference will
-    be replace with the address of the said reference.
+    be replaced with the address of the said reference.
     This is mainly used to create interrupt vectors.
     This is used like this: **.dataMemref randomLabel**
 * ".dataNumeric"
     * This is the same as .dataAlpha except that it
-    allows the programmer to use 32 bits
+    allows the programmer to use 32 bit
     numeric values. Usage example:
     testInt:
     .dataNumeric 0xFFFFFFFF
 * "$"
     * Is the register prefix. Every register, when
     used in an assembly instruction, must be
-    preceded by the “$” character.
+    preceded by the “$” character
 * "#"
     * Is the immediate prefix. Every immediate
     value (except when using the .dataNumeric directive) must be
@@ -590,7 +590,7 @@ is to be loaded in memory. Not providing the load
 address will result in the binary being linked to be
 loaded at the MEMORY_START_AT address
 (default is 0x40000000). This is fine for testing
-purpose since the execution unit starts fetching
+purposes since the execution unit starts fetching
 instructions at that address.
 ##### Beware!
 When linking multiple files together, the order in
@@ -604,11 +604,11 @@ folder as the final binary. That file is simply a
 symbol and address listing. This file, if available,
 will be loaded when you run the binary in the
 debugger and will allow you to use symbol names
-instead of memory address when executing the
+instead of memory addresses when executing the
 binary in the context of the debugger. Note that all
 the symbols present in that file have been modified
 with the name of their origin file as prefix. The
-symbol name themselves are also transformed to
+symbol names themselves are also transformed to
 upper case.
 ##### Usage
 In order to link the .o file previously generated, one would use the following command:
@@ -645,7 +645,7 @@ the following command:
 
 ##### Important note about virtual boot
 If the debugger is launched without any parameters. It will launch using the firmware code
-present in CapuaEnvironment/firmware.bin. In order for this to work, one need to assemble and link
+present in CapuaEnvironment/firmware.bin. In order for this to work, one needs to assemble and link
 CapuaEnvironment/firmware.casm into CapuaEnvironment/firmware.bin. This firmware will then attempt
 a disk validation. Should the disk validation succeed, it will load the first sector of the disk
 at MEMORY_START_AT (default is 0x40000000) and will transfer the execution to this newly loaded code.
@@ -654,7 +654,7 @@ This aims at simulating a boot process. The firmware code can be inspected for m
 ## HardDriveCreator.py
 The hard drive creator tool is nothing more than a helper tool that will generate an
 empty binary file of the proper length for the VM. It will check the VM configuration
-and generate the file according to hard drive size configured within. Default configuration
+and generate the file according to the hard drive size configured within. Default configuration
 is for 1MB.
 In order to work properly, the VM needs a HD.bin (hard drive file) to be located 
 at the root of the project directory. You can generate this file with the following
@@ -675,10 +675,10 @@ Inversely, interrupt handling can be disabled by using
 > DACTI
 
 On Capua, interrupt handling is done with the help of the Interrupt Vector Register (IVR).
-The IVR has to be set with a pointer to a vector of 32 bits pointers to interruption handling
+The IVR has to be set with a pointer to a vector of 32 bit pointers to interruption handling
 routine. Every hardware interrupt is associated with a number (software interrupt specify their own).
 When a hardware interrupt occurs, interrupt handling becomes disabled and execution resumes
-at the interrupt handling routine corresponding an interrupt number. This is almost the same
+at the interrupt handling routine corresponding to the interrupt number. This is almost the same
 for software interrupts. The handling of interruption is not disabled when handling
 a software interrupt. This is so the system can receive hardware interrupts while handling
 a software interrupt. The handling routine is selected from the interrupt vector following this formula:
@@ -691,7 +691,7 @@ Routine = Vector + (IN * 4)
 ```
 
 It is of the utmost importance that the programmer understands that, while handling
-an hardware interrupt, all interrupts are disabled on the system. Most device on Capua will cache
+an hardware interrupt, all interrupts are disabled on the system. Most devices on Capua will cache
 interrupts and wait in order to be able to deliver these. However, this is not guaranteed.
 Some interrupts could be lost if the code stays for an extended period of time
 within an interrupt handling routine. At the end of the routine, in the case of a hardware interrupt
@@ -720,26 +720,26 @@ current interrupt mapping:
 
 
 ###### Important note:
-One might not understand why he/she would go to the extend of setting up interrupt
-handling for software. As of now, there are no difference, or close to no difference between
-software interrupts and function call. However, please know that, support for virtual memory
-and multiple level of privilege is on Capua development road map. Therefore, it is 
+One might not understand why he/she would go to the extent of setting up interrupt
+handling for software. As of now, there is no difference, or at least close to no difference between
+software interrupts and function calls. However, please know that, support for virtual memory
+and multiple levels of privilege are on the Capua development road map. Therefore, it is 
 currently recommended to use the interruption facilities for everything that would normally
 be provided to the user from the kernel of an operating system. This will hopefully 
 prevent future code breakage.
 
 The following code snippet shows how to handle both software and hardware interrupts. It also
-show how to setup the code in order to be able to handle interrupts.
+shows how to setup the code in order to be able to handle interrupts.
 ```
 ; This example shows how multiple hardware interrupts
-; can be mapped to the same code. It also show how to
+; can be mapped to the same code. It also shows how to
 ; properly handle software interrupts and setup the
 ; IVR
 .global start:
 
 start:
     MOV end $S                      ; Stack grows up, setting S to the end is generally safer
-                                    ; The stack needs to be configure for interrupt handling to work
+                                    ; The stack needs to be configured for interrupt handling to work
     MOV vector $A
     SIVR $A                         ; Set the interrupt vector to "vector"
     ACTI                            ; Interrupt handling activation
@@ -747,7 +747,7 @@ start:
                                     ; Since IVR is set to vector, the routine used when int #4 is executed will be
                                     ; determined by:
                                     ; routine = vector + (4 * 4)
-                                    ; Since each entries are 4 bytes long
+                                    ; Since each entry is 4 bytes long
                                     ; routine = testHandler
 
 loop:
@@ -778,8 +778,8 @@ end:
 The virtual machine offers support for memory
 mapped hardware. Memory mapped hardware is
 accessible at specific memory addresses. Different
-addresses have different meaning. The way each device
-behave is specific to a single device.
+addresses have different meanings. The way each device
+behaves is specific to a single device.
 
 ## Clock
 ```
@@ -802,7 +802,7 @@ MEMR [4] $A $B          ; The clock value will be in register $B
 Mapping address: 0x20000300
 Allowed operation(s): Read/Write
 ```
-When writing 4 bytes at mapped address, the Interrupt Clock will start generating
+When writing 4 bytes at a mapped address, the Interrupt Clock will start generating
 clock hardware interrupts at a frequency (milliseconds) set by the 4 bytes value written at the
 mapped address. In order for the core to receive the generated interrupts, 
 interrupts must have been activated on the core. No interrupts are generated (even
@@ -822,7 +822,7 @@ One should note an important element. The hard drive it self is not mapped at th
 mapped address. The hard drive controller is. It is the controller
 that is to be used to access the hard drive.
 
-A specific structure needs to be writen at mapped address for access to the hard drive
+A specific structure needs to be written at mapped address for access to the hard drive
 to be possible. For every access operation, the structure needs to be set properly.
 
 Hard drive access operation structure:
@@ -832,7 +832,7 @@ Hard drive access operation structure:
 * 0x20000408 = Memory Address to write TO or to read FROM
 * 0x2000040C = Trigger memory action = When this is set to 1, the action is triggered
     * This needs to be manually reset to 0 in between hard drive access operation otherwise 
-    any new write to the mapped address structure will cause an operation on the disk.
+    any new write to the mapped address structure will cause an operation on the disk
 
 Following an operation on the drive, the corresponding interrupt will be generated by the
 drive and sent to the core.
@@ -912,13 +912,13 @@ codeStart:
 ```
 ##### Terminal - keyboard
 The keyboard requires the interrupts to be activated and configured in order to work.
-A proper keyboard handler needs to be provided. When a user press a key on the 
+A proper keyboard handler needs to be provided. When a user presses a key on the 
 keyboard, a keyboard interrupt is generated and control is transferred to the keyboard
 handler. At that point, the scan code (beware, scan code, not character) for the key
 that was pressed on the keyboard will be available for read at address 0x20001800.
 In the case where an interrupt for a key press can't be delivered to the core (if the core 
 is already handling another hardware interrupt for example), the
-keyboard has a buffer for 20 key press and will try delivering the interrupt later as long
+keyboard has a buffer for 20 key presses and will try delivering the interrupt later as long
 as its 20 key buffer is not full. When the buffer is full, the oldest key strokes will be flushed out.
 
 The following snippet show an example of keyboard read and interrupt handling.
@@ -985,21 +985,21 @@ The following explains the various parts of the file format.
     calculation was put in the assembler since it was
     easier and faster to put it there. Also, the info is
     readily available for the linker when this one
-    needs to calculate file wide address across
-    multiple files that needs to be linked together.
+    needs to calculate a file wide address across
+    multiple files that need to be linked together.
 * ExternalSymbols
     * This tag holds a list of tags (refName/refAdd
     couples). The symbols present in the
     ExternalSymbols list are seen as “global” and,
     therefore, are available to the linker when linking
-    multiple object together.
+    multiple object together
 * InternalSymbols
     * This tag is the same as ExternalSymbols except
     that the symbols listed in this tag are not available
     to the linker when linking multiple files together.
     This was originally made that way to prevent
     name collision on the global (external) scale at
-    linking time. The linking process later add the
+    linking time. The linking process later adds the
     source file name to the symbols so that all
     symbols are available (internal and external) when
     using the debugger while still avoiding collision.
@@ -1010,19 +1010,19 @@ The following explains the various parts of the file format.
     refName simply holds a text version of the
     symbol name. The symbol name is determined
     by memory reference/naming in the assembly
-    code written by the programmer.
+    code written by the programmer
 * refAdd
     * This follows a refName tag and simply
-    indicate the offset where the symbol can be found
+    indicates the offset where the symbol can be found
     from the 0 address (relative to the beginning of
     the current file). Note that the offset is relative to
     a fully linked file. Not to an object file. That
-    address eventually replace the symbol name when
+    address eventually replaces the symbol name when
     the file is linked
 * Text
     * The text tag holds the assembled binary of the
     object file. A close look will reveal the presence of
-    symbols name inside the text tag. These are
+    symbols names inside the text tag. These are
     replaced at linking time. The symbols are present
     in the text section like: “:SymbolName:”. This is
     not a perfect (not even a good one) solution but
