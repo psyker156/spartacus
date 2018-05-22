@@ -30,7 +30,16 @@ from Configuration.Configuration import REGISTER_A, \
                                         REGISTER_E, \
                                         REGISTER_F, \
                                         REGISTER_G, \
-                                        REGISTER_S
+                                        REGISTER_S, \
+                                        REGISTER_A2, \
+                                        REGISTER_B2, \
+                                        REGISTER_C2, \
+                                        REGISTER_D2, \
+                                        REGISTER_E2, \
+                                        REGISTER_F2, \
+                                        REGISTER_G2, \
+                                        REGISTER_S2
+
 from ToolChain.Assembler.Constants import REGISTER_PREFIX, \
                                           IMMEDIATE_PREFIX, \
                                           WIDTH_INDICATORS, \
@@ -224,8 +233,24 @@ class Parser:
             registerCode = REGISTER_F
         elif registerName == "G":
             registerCode = REGISTER_G
+        elif registerName == "A2":
+            registerCode = REGISTER_A2
+        elif registerName == "B2":
+            registerCode = REGISTER_B2
+        elif registerName == "C2":
+            registerCode = REGISTER_C2
+        elif registerName == "D2":
+            registerCode = REGISTER_D2
+        elif registerName == "E2":
+            registerCode = REGISTER_E2
+        elif registerName == "F2":
+            registerCode = REGISTER_F2
+        elif registerName == "G2":
+            registerCode = REGISTER_G2
         elif registerName == "S":
             registerCode = REGISTER_S
+        elif registerName == "S2":
+            registerCode = REGISTER_S2
         else:
             raise ValueError("Invalid register provided. '{}' seen as input, expect A, B, C or S.".format(registerName))
 

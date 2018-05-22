@@ -988,7 +988,15 @@ class TestParser(unittest.TestCase):
         self.assertEqual(0b100, self.parser.translateRegisterNameToRegisterCode(registerName="E"))
         self.assertEqual(0b101, self.parser.translateRegisterNameToRegisterCode(registerName="F"))
         self.assertEqual(0b110, self.parser.translateRegisterNameToRegisterCode(registerName="G"))
-        self.assertEqual(0b1111, self.parser.translateRegisterNameToRegisterCode(registerName="S"))
+        self.assertEqual(0b111, self.parser.translateRegisterNameToRegisterCode(registerName="S"))
+        self.assertEqual(0b1000, self.parser.translateRegisterNameToRegisterCode(registerName="A2"))
+        self.assertEqual(0b1001, self.parser.translateRegisterNameToRegisterCode(registerName="B2"))
+        self.assertEqual(0b1010, self.parser.translateRegisterNameToRegisterCode(registerName="C2"))
+        self.assertEqual(0b1011, self.parser.translateRegisterNameToRegisterCode(registerName="D2"))
+        self.assertEqual(0b1100, self.parser.translateRegisterNameToRegisterCode(registerName="E2"))
+        self.assertEqual(0b1101, self.parser.translateRegisterNameToRegisterCode(registerName="F2"))
+        self.assertEqual(0b1110, self.parser.translateRegisterNameToRegisterCode(registerName="G2"))
+        self.assertEqual(0b1111, self.parser.translateRegisterNameToRegisterCode(registerName="S2"))
         self.assertRaises(ValueError, self.parser.translateRegisterNameToRegisterCode, "x")  # Invalid register
 
     def test_translateTextImmediateToImmediate(self):

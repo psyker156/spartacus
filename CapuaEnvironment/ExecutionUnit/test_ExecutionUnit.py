@@ -320,13 +320,22 @@ class TestExecutionUnit(unittest.TestCase):
         self.eu.E = 1
         self.eu.F = 1
         self.eu.G = 1
+        self.eu.A2 = 1
+        self.eu.B2 = 1
+        self.eu.C2 = 1
+        self.eu.D2 = 1
+        self.eu.E2 = 1
+        self.eu.F2 = 1
+        self.eu.G2 = 1
         self.eu.S = 1
+        self.eu.S2 = 1
         self.eu.IS = 1
         self.eu.IVR = 1
         self.eu.FLAGS = 1
         self.eu.reset(0)  # Making sure we can set I to value requested
         count = self.eu.A + self.eu.B + self.eu.C + self.eu.D + self.eu.E + self.eu.F + self.eu.G + \
-                self.eu.S + self.eu.IS + self.eu.IVR + self.eu.I + self.eu.FLAGS
+                self.eu.A2 + self.eu.B2 + self.eu.C2 + self.eu.D2 + self.eu.E2 + self.eu.F2 + self.eu.G2 + \
+                self.eu.S + self.eu.S2 + self.eu.IS +self.eu.IVR + self.eu.I + self.eu.FLAGS
         self.assertEqual(count, 0)
         self.eu.setupCore(MEMORY_START_AT)
         self.eu.A = 1
@@ -336,12 +345,21 @@ class TestExecutionUnit(unittest.TestCase):
         self.eu.E = 1
         self.eu.F = 1
         self.eu.G = 1
+        self.eu.A2 = 1
+        self.eu.B2 = 1
+        self.eu.C2 = 1
+        self.eu.D2 = 1
+        self.eu.E2 = 1
+        self.eu.F2 = 1
+        self.eu.G2 = 1
         self.eu.S = 1
+        self.eu.S2 = 1
         self.eu.IS = 1
         self.eu.IVR = 1
         self.eu.FLAGS = 1
         self.eu.reset()  # Making sure we can rely on the default value for I after reset
         count = self.eu.A + self.eu.B + self.eu.C + self.eu.D + self.eu.E + self.eu.F + self.eu.G + \
-                self.eu.S + self.eu.IS + self.eu.IVR + self.eu.I + self.eu.FLAGS
+                self.eu.A2 + self.eu.B2 + self.eu.C2 + self.eu.D2 + self.eu.E2 + self.eu.F2 + self.eu.G2 + \
+                self.eu.S + self.eu.S2 + self.eu.IS + self.eu.IVR + self.eu.I + self.eu.FLAGS
         self.assertEqual(count, MEMORY_START_AT)
 
