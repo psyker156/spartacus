@@ -45,8 +45,8 @@ Capua is a load/store architecture. This means that only load (**MEMR**) and sto
 instructions can do memory access. Stack related instructions also have access to
 memory but in a much stricter way.
 ## Registers
-Capua now have 8 GPRs named from **A** to **H**, **J** to **P**, and then **S**. The **S**
-GPR is intended to be used as a stack register. All registers are 32 bits wide. The
+Capua now has 16 GPRs named from **A** to **G**, and **A2** to **G2**. It also now has **S** and **S2**. The **S** and **S2**
+GPRs are intended to be used as stack registers. All registers are 32 bits wide. The
 instruction pointer is named **I** and is not user accessible. A flag register named **FLAGS**
 is used by the core but is also not user accessible. 
 ## Memory
