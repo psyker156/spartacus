@@ -31,7 +31,15 @@ from Configuration.Configuration import REGISTER_A, \
                                         REGISTER_E, \
                                         REGISTER_F, \
                                         REGISTER_G, \
+                                        REGISTER_A2, \
+                                        REGISTER_B2, \
+                                        REGISTER_C2, \
+                                        REGISTER_D2, \
+                                        REGISTER_E2, \
+                                        REGISTER_F2, \
+                                        REGISTER_G2, \
                                         REGISTER_S, \
+                                        REGISTER_S2, \
                                         MEMORY_END_AT, \
                                         MEMORY_START_AT
 
@@ -60,7 +68,15 @@ class ExecutionUnit:
     E = 0           # Software limited to 32 bits General purpose register
     F = 0           # Software limited to 32 bits General purpose register
     G = 0           # Software limited to 32 bits General purpose register
-    S = 0           # Software limited to 32 bits Stack pointer. Can be used as a GPR is not using the stack
+    S = 0           # Software limited to 32 bits Stack pointer. Can be used as a GPR if not using the stack
+    A2 = 0          # Software limited to 32 bits General purpose register
+    B2 = 0          # Software limited to 32 bits General purpose register
+    C2 = 0          # Software limited to 32 bits General purpose register
+    D2 = 0          # Software limited to 32 bits General purpose register
+    E2 = 0          # Software limited to 32 bits General purpose register
+    F2 = 0          # Software limited to 32 bits General purpose register
+    G2 = 0          # Software limited to 32 bits General purpose register
+    S2 = 0          # Software limited to 32 bits General purpose register. Not currently configured for stack.
     I = 0           # Software limited to 32 bits Instruction pointer. This one is not accessible from instructions
     FLAGS = 0b000   # 3 bits limited ZLH = Zero, Lower, Higher
     IS = 0b0        # 1 bit boolean indicating if interrupts are activated or not
@@ -132,10 +148,18 @@ class ExecutionUnit:
         self.E = 0
         self.F = 0
         self.G = 0
+        self.A2 = 0
+        self.B2 = 0
+        self.C2 = 0
+        self.D2 = 0
+        self.E2 = 0
+        self.F2 = 0
+        self.G2 = 0
         self.I = I
         self.IS = 0
         self.IVR = 0
         self.S = 0
+        self.S2 = 0
         self.FLAGS = 0
 
     def halt(self):
@@ -194,8 +218,24 @@ class ExecutionUnit:
             self.F = value
         elif registerCode == REGISTER_G:
             self.G = value
+        elif registerCode == REGISTER_A2:
+            self.A2 = value
+        elif registerCode == REGISTER_B2:
+            self.B2 = value
+        elif registerCode == REGISTER_C2:
+            self.C2 = value
+        elif registerCode == REGISTER_D2:
+            self.D2 = value
+        elif registerCode == REGISTER_E2:
+            self.E2 = value
+        elif registerCode == REGISTER_F2:
+            self.F2 = value
+        elif registerCode == REGISTER_G2:
+            self.G2 = value
         elif registerCode == REGISTER_S:
             self.S = value
+        elif registerCode == REGISTER_S2:
+            self.S2 = value
         else:
             raise ValueError("Core {} caused an invalid instruction to be executed - GameOver". format(self.name,))
 
@@ -220,8 +260,24 @@ class ExecutionUnit:
             register = self.F
         elif registerCode == REGISTER_G:
             register = self.G
+        elif registerCode == REGISTER_A2:
+            register = self.A2
+        elif registerCode == REGISTER_B2:
+            register = self.B2
+        elif registerCode == REGISTER_C2:
+            register = self.C2
+        elif registerCode == REGISTER_D2:
+            register = self.D2
+        elif registerCode == REGISTER_E2:
+            register = self.E2
+        elif registerCode == REGISTER_F2:
+            register = self.F2
+        elif registerCode == REGISTER_G2:
+            register = self.G2
         elif registerCode == REGISTER_S:
             register = self.S
+        elif registerCode == REGISTER_S2:
+            register = self.S2
         else:
             raise ValueError("Core exception access to invalid register")
 

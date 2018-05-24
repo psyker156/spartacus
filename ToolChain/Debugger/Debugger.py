@@ -28,7 +28,15 @@ from Configuration.Configuration import REGISTER_A, \
                                         REGISTER_E, \
                                         REGISTER_F, \
                                         REGISTER_G, \
+                                        REGISTER_A2, \
+                                        REGISTER_B2, \
+                                        REGISTER_C2, \
+                                        REGISTER_D2, \
+                                        REGISTER_E2, \
+                                        REGISTER_F2, \
+                                        REGISTER_G2, \
                                         REGISTER_S, \
+                                        REGISTER_S2, \
                                         DEBUGGER_WAKEUP_TICK_COUNT
 
 from ToolChain.Linker.Constants import DEFAULT_LOAD_ADDRESS
@@ -328,8 +336,24 @@ class Debugger:
             result = "F"
         elif numericRegister == REGISTER_G:
             result = "G"
+        elif numericRegister == REGISTER_A2:
+            result = "A2"
+        elif numericRegister == REGISTER_B2:
+            result = "B2"
+        elif numericRegister == REGISTER_C2:
+            result = "C2"
+        elif numericRegister == REGISTER_D2:
+            result = "D2"
+        elif numericRegister == REGISTER_E2:
+            result = "E2"
+        elif numericRegister == REGISTER_F2:
+            result = "F2"
+        elif numericRegister == REGISTER_G2:
+            result = "G2"
         elif numericRegister == REGISTER_S:
             result = "S"
+        elif numericRegister == REGISTER_S2:
+            result = "S2"
 
         return result
 
@@ -348,7 +372,15 @@ class Debugger:
         self.debugLog("{} = {}  {}".format("E    ", self.capua.eu.E, hex(self.capua.eu.E),))
         self.debugLog("{} = {}  {}".format("F    ", self.capua.eu.F, hex(self.capua.eu.F),))
         self.debugLog("{} = {}  {}".format("G    ", self.capua.eu.G, hex(self.capua.eu.G),))
+        self.debugLog("{} = {}  {}".format("A2   ", self.capua.eu.A2, hex(self.capua.eu.A2),))
+        self.debugLog("{} = {}  {}".format("B2   ", self.capua.eu.B2, hex(self.capua.eu.B2),))
+        self.debugLog("{} = {}  {}".format("C2   ", self.capua.eu.C2, hex(self.capua.eu.C2),))
+        self.debugLog("{} = {}  {}".format("D2   ", self.capua.eu.D2, hex(self.capua.eu.D2),))
+        self.debugLog("{} = {}  {}".format("E2   ", self.capua.eu.E2, hex(self.capua.eu.E2),))
+        self.debugLog("{} = {}  {}".format("F2   ", self.capua.eu.F2, hex(self.capua.eu.F2),))
+        self.debugLog("{} = {}  {}".format("G2   ", self.capua.eu.G2, hex(self.capua.eu.G2),))
         self.debugLog("{} = {}  {}".format("S    ", self.capua.eu.S, hex(self.capua.eu.S),))
+        self.debugLog("{} = {}  {}".format("S2   ", self.capua.eu.S2, hex(self.capua.eu.S2),))
         self.debugLog("{} = {}  {}".format("I    ", self.capua.eu.I, hex(self.capua.eu.I),))
         self.debugLog("{} = {}  {}".format("FLAGS", self.capua.eu.FLAGS, bin(self.capua.eu.FLAGS),))
         self.debugLog("")
