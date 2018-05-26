@@ -34,7 +34,7 @@ __author__ = "CSE"
 __copyright__ = "Copyright 2015, CSE"
 __credits__ = ["CSE"]
 __license__ = "GPL"
-__version__ = "2.0"
+__version__ = "2.1"
 __maintainer__ = "CSE"
 __status__ = "Dev"
 
@@ -151,13 +151,10 @@ class MemoryIOController:
                                                             isWrite=True,
                                                             source=source)
         else:
-            # First, we get the memory slice that we need to use and value to be written in individual bytes
-            memorySlice = self._memoryArray.extractMemory(address, length)
+            # First, we prepare a list of values to be written
             valueArray = self._prepareNumericValueToBeWrittenToMemory(length, value)
-
             # Now we write to memory!
-            for i in range(0, len(valueArray)):
-                memorySlice[i].writeValue(valueArray[i], accessedBy=source)
+            self._memoryArray.writeMemory(address=address, values=valueArray, length=length)
 
         self._memoryBusLock.release()
         return
@@ -184,7 +181,7 @@ class MemoryIOController:
 
             # Build a value list to be unpacked
             for i in range(0, length):
-                valueToBeUnpacked += bytes([extractedMemoryCells[i].readValue()])
+                valueToBeUnpacked += bytes([extractedMemoryCells[i]])
 
             # For the unpack to work, we need a 4 bytes len bytes object
             # This loop make sure that we have a usable bytes object

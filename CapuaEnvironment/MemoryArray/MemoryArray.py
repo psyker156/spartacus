@@ -20,7 +20,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 """
 
-from CapuaEnvironment.MemoryArray.MemoryCell.MemoryCell import MemoryCell
 from Configuration.Configuration import MEMORY_START_AT, \
                                         MEMORY_CELL_INITIAL_VALUE, \
                                         MEMORY_END_AT
@@ -29,7 +28,7 @@ __author__ = "CSE"
 __copyright__ = "Copyright 2015, CSE"
 __credits__ = ["CSE"]
 __license__ = "GPL"
-__version__ = "2.0"
+__version__ = "2.1"
 __maintainer__ = "CSE"
 __status__ = "Dev"
 
@@ -54,7 +53,7 @@ class MemoryArray:
         for address in range(MEMORY_START_AT, MEMORY_END_AT):  # MEMORY_END_AT is NOT inclusive!!!
             # Create a cell for each memory address available default permission is
             # hardcoded to all access. This will be adjusted after Capua is "booted up".
-            mc = MemoryCell(permission=0b111, value=MEMORY_CELL_INITIAL_VALUE)
+            mc = MEMORY_CELL_INITIAL_VALUE
             self._memoryCellArray.append(mc)
 
     def extractMemory(self, address, length=1):
@@ -76,12 +75,24 @@ class MemoryArray:
 
         return memorySlice
 
+    def writeMemory(self, address, values, length):
+        """
+        This method will overwrite values from a given address
+        :param address: int, the address where the overwrite is to happen
+        :param values: int list, a list containing values to be writen in memory
+        :param length: int, length of the write operation
+        :return: none
+        """
+        baseIndex = self._computeArrayIndexFromAddress(address)
+        for i in range(0, length):
+            self._memoryCellArray[baseIndex + i] = values[i]
+
     def directMemoryCellAccess(self, address):
         """
         This will return the memory cell so caller can work directly on the cell itself instead of
         using the memory array to access the cell. Allow for more flexible access to memory.
         :param address: int, Address for which access is requires
-        :return: MemoryCell, memory cell required by accessing program
+        :return: int, memory cell (8 bits) required by accessing program
         """
         index = self._computeArrayIndexFromAddress(address)
         return self._memoryCellArray[index]

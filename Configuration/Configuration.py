@@ -24,13 +24,13 @@ __author__ = "CSE"
 __copyright__ = "Copyright 2015, CSE"
 __credits__ = ["CSE"]
 __license__ = "GPL"
-__version__ = "2.0"
+__version__ = "2.1"
 __maintainer__ = "CSE"
 __status__ = "Dev"
 
 
 MEMORY_START_AT = 0x40000000
-MEMORY_ARRAY_NUMBER_OF_MEMORY_CELL = 0x100000  # 1 048 576 memory cells = 1 Meg
+MEMORY_ARRAY_NUMBER_OF_MEMORY_CELL = 0x100000 * 16  # 1 048 576 * 16 memory cells = 16 Megs of RAM
 MEMORY_END_AT = MEMORY_START_AT + MEMORY_ARRAY_NUMBER_OF_MEMORY_CELL
 MEMORY_CELL_INITIAL_VALUE = 0XFF  # NOP operation
 

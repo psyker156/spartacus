@@ -29,7 +29,7 @@ __author__ = "CSE"
 __copyright__ = "Copyright 2015, CSE"
 __credits__ = ["CSE"]
 __license__ = "GPL"
-__version__ = "2.0"
+__version__ = "2.1"
 __maintainer__ = "CSE"
 __status__ = "Dev"
 
@@ -79,7 +79,7 @@ class InstructionFetchUnit:
         """
         instructionForm = None
         mc = self._memoryArray.extractMemory(address, 1)[0]
-        value = mc.executeValue()  # using executeValue allow to validate the execute permission
+        value = mc & 0xff   # Making sure we have an 8 bits value
 
         # Extracting type and instruction codes
         typeCode = (value & 0b11110000) >> 4
@@ -115,7 +115,7 @@ class InstructionFetchUnit:
         binaryInstruction = 0
         for mc in memorySlice:
             binaryInstruction <<= 8
-            binaryInstruction |= mc.executeValue()  # Using executeValue makes sure we have execute permission
+            binaryInstruction |= mc & 0xff  # Only 8 bits can be used at a time
 
         # binaryInstruction is now  a big number representing the instruction
         # Time to create the instruction using this big number!

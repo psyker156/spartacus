@@ -31,7 +31,7 @@ __author__ = "CSE"
 __copyright__ = "Copyright 2015, CSE"
 __credits__ = ["CSE"]
 __license__ = "GPL"
-__version__ = "2.0"
+__version__ = "2.1"
 __maintainer__ = "CSE"
 __status__ = "Dev"
 
@@ -54,8 +54,9 @@ class TestInstructionFetchUnit(unittest.TestCase):
         """
         Validates good working of the fetchInstructionAtAddress method for InstructionFetchUnit
         """
-        memoryGroup = self.ifu._memoryArray.extractMemory(MEMORY_START_AT, 1)
-        memoryGroup[0].writeValue(0xFF, "System")  # Insert nop instruction in memory
+        self.ifu._memoryArray.writeMemory(MEMORY_START_AT,
+                                          [0xFF],
+                                          1)  # Insert nop instruction in memory
         instruction, nextInstructionAddress = self.ifu.fetchInstructionAtAddress(MEMORY_START_AT)
         self.assertIsNotNone(instruction.instructionCode)
         self.assertIsNone(instruction.sourceRegister)
@@ -66,8 +67,9 @@ class TestInstructionFetchUnit(unittest.TestCase):
         self.assertIsNone(instruction.flags)
         self.assertEqual(nextInstructionAddress, MEMORY_START_AT + 1)
 
-        memoryGroup = self.ifu._memoryArray.extractMemory(MEMORY_START_AT, 1)
-        memoryGroup[0].writeValue(0b00010000, "System")  # Insert InsWidthRegReg instruction type in memory
+        self.ifu._memoryArray.writeMemory(MEMORY_START_AT,
+                                          [0b00010000],
+                                          1)  # Insert InsWidthRegReg instruction type in memory
         instruction, nextInstructionAddress = self.ifu.fetchInstructionAtAddress(MEMORY_START_AT)
         self.assertIsNotNone(instruction.instructionCode)
         self.assertIsNotNone(instruction.sourceRegister)
@@ -83,48 +85,47 @@ class TestInstructionFetchUnit(unittest.TestCase):
         """
         Validates good working of the fetchInstructionFormAtAddress method for InstructionFetchUnit
         """
-        memoryGroup = self.ifu._memoryArray.extractMemory(MEMORY_START_AT, 1)
-        memoryGroup[0].writeValue(0xFF, "System")
+        self.ifu._memoryArray.writeMemory(MEMORY_START_AT, [0xFF], 1)
         form = self.ifu._fetchInstructionFormAtAddress(MEMORY_START_AT)
         self.assertEqual(formDescription["Ins"], form)
 
-        memoryGroup[0].writeValue(0b01110000, "System")
+        self.ifu._memoryArray.writeMemory(MEMORY_START_AT, [0b01110000], 1)
         form = self.ifu._fetchInstructionFormAtAddress(MEMORY_START_AT)
         self.assertEqual(formDescription["InsReg"], form)
 
-        memoryGroup[0].writeValue(0b10000000, "System")
+        self.ifu._memoryArray.writeMemory(MEMORY_START_AT, [0b10000000], 1)
         form = self.ifu._fetchInstructionFormAtAddress(MEMORY_START_AT)
         self.assertEqual(formDescription["InsImm"], form)
 
-        memoryGroup[0].writeValue(0b01100000, "System")
+        self.ifu._memoryArray.writeMemory(MEMORY_START_AT, [0b01100000], 1)
         form = self.ifu._fetchInstructionFormAtAddress(MEMORY_START_AT)
         self.assertEqual(formDescription["InsImmReg"], form)
 
-        memoryGroup[0].writeValue(0b00000000, "System")
+        self.ifu._memoryArray.writeMemory(MEMORY_START_AT, [0b00000000], 1)
         form = self.ifu._fetchInstructionFormAtAddress(MEMORY_START_AT)
         self.assertEqual(formDescription["InsWidthImmReg"], form)
 
-        memoryGroup[0].writeValue(0b00010000, "System")
+        self.ifu._memoryArray.writeMemory(MEMORY_START_AT, [0b00010000], 1)
         form = self.ifu._fetchInstructionFormAtAddress(MEMORY_START_AT)
         self.assertEqual(formDescription["InsWidthRegReg"], form)
 
-        memoryGroup[0].writeValue(0b00100000, "System")
+        self.ifu._memoryArray.writeMemory(MEMORY_START_AT, [0b00100000], 1)
         form = self.ifu._fetchInstructionFormAtAddress(MEMORY_START_AT)
         self.assertEqual(formDescription["InsWidthRegImm"], form)
 
-        memoryGroup[0].writeValue(0b00110000, "System")
+        self.ifu._memoryArray.writeMemory(MEMORY_START_AT, [0b00110000], 1)
         form = self.ifu._fetchInstructionFormAtAddress(MEMORY_START_AT)
         self.assertEqual(formDescription["InsWidthImmImm"], form)
 
-        memoryGroup[0].writeValue(0b01000000, "System")
+        self.ifu._memoryArray.writeMemory(MEMORY_START_AT, [0b01000000], 1)
         form = self.ifu._fetchInstructionFormAtAddress(MEMORY_START_AT)
         self.assertEqual(formDescription["InsFlagImm"], form)
 
-        memoryGroup[0].writeValue(0b01010000, "System")
+        self.ifu._memoryArray.writeMemory(MEMORY_START_AT, [0b01010000], 1)
         form = self.ifu._fetchInstructionFormAtAddress(MEMORY_START_AT)
         self.assertEqual(formDescription["InsFlagReg"], form)
 
-        memoryGroup[0].writeValue(0b10010000, "System")
+        self.ifu._memoryArray.writeMemory(MEMORY_START_AT, [0b10010000], 1)
         form = self.ifu._fetchInstructionFormAtAddress(MEMORY_START_AT)
         self.assertEqual(formDescription["InsRegReg"], form)
 

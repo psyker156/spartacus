@@ -32,7 +32,7 @@ __author__ = "CSE"
 __copyright__ = "Copyright 2015, CSE"
 __credits__ = ["CSE"]
 __license__ = "GPL"
-__version__ = "2.0"
+__version__ = "2.1"
 __maintainer__ = "CSE"
 __status__ = "Dev"
 
@@ -48,8 +48,7 @@ class TestMemoryArray(unittest.TestCase):
         ma = MemoryArray()
         self.assertEqual(MEMORY_ARRAY_NUMBER_OF_MEMORY_CELL, len(ma._memoryCellArray))
         for mc in ma.extractMemory(MEMORY_START_AT, MEMORY_ARRAY_NUMBER_OF_MEMORY_CELL):
-            self.assertEqual(0b111, mc._permission)
-            self.assertEqual(MEMORY_CELL_INITIAL_VALUE, mc._value)
+            self.assertEqual(MEMORY_CELL_INITIAL_VALUE, mc)
 
     def test_extractMemory(self):
         """
