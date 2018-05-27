@@ -49,25 +49,20 @@ class MemoryArray:
         environment to be configurable by the user with minimal code change.
         Configuration for memory cell array are in Configuration.Configuration
         """
-        self._memoryCellArray = []
-        for address in range(MEMORY_START_AT, MEMORY_END_AT):  # MEMORY_END_AT is NOT inclusive!!!
-            # Create a cell for each memory address available default permission is
-            # hardcoded to all access. This will be adjusted after Capua is "booted up".
-            mc = MEMORY_CELL_INITIAL_VALUE
-            self._memoryCellArray.append(mc)
+        self._memoryCellArray = [
+            MEMORY_CELL_INITIAL_VALUE
+            for x in range(MEMORY_START_AT, MEMORY_END_AT)
+        ]
 
-    def extractMemory(self, address, length=1):
+    def readMemory(self, address, length=1):
         """
-        This method allows for extraction of a slice of contiguous memory
+        This method allows to read a slice of contiguous memory
         :param address: int, Address for which access is required
         :param length: int length of the required extraction
         :return: list of MemoryCell that are contiguous in memory
         """
-
-        # Making sure the length does not reach out of the memory
-        lengthLimit = MEMORY_END_AT - address
-        if length <= 0 or length > lengthLimit:
-            raise MemoryError("Access reaching out of bound of memory for address: {}".format(hex(address)))
+        # Check memory access is ok
+        self._validateAddressForLengthAccess(address, length)
 
         # Memory extraction from base
         baseIndex = self._computeArrayIndexFromAddress(address)
@@ -75,7 +70,7 @@ class MemoryArray:
 
         return memorySlice
 
-    def writeMemory(self, address, values, length):
+    def writeMemory(self, address, values):
         """
         This method will overwrite values from a given address
         :param address: int, the address where the overwrite is to happen
@@ -83,9 +78,28 @@ class MemoryArray:
         :param length: int, length of the write operation
         :return: none
         """
-        baseIndex = self._computeArrayIndexFromAddress(address)
-        for i in range(0, length):
-            self._memoryCellArray[baseIndex + i] = values[i]
+        length = len(values)
+
+        # Check memory access is ok
+        self._validateAddressForLengthAccess(address, length)
+
+        # Do memory access
+        base = self._computeArrayIndexFromAddress(address)
+        self._memoryCellArray[base:base + length] = values
+
+    def _validateAddressForLengthAccess(self, address, length):
+        """
+        This method does memory range access validation. It will validate
+        that a given memory address and length are actually available on
+        the system. In case an address/length it out of memory range a
+        MemoryError is raised.
+        :param address: int, the address where the memory check must start
+        :param length: int, the length for the memory check
+        :return: none
+        """
+        lengthLimit = MEMORY_END_AT - address
+        if address < MEMORY_START_AT or length <= 0 or length > lengthLimit:
+            raise MemoryError("Access reaching out of bound of memory for address: {}".format(hex(address)))
 
     def directMemoryCellAccess(self, address):
         """

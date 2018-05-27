@@ -154,7 +154,7 @@ class MemoryIOController:
             # First, we prepare a list of values to be written
             valueArray = self._prepareNumericValueToBeWrittenToMemory(length, value)
             # Now we write to memory!
-            self._memoryArray.writeMemory(address=address, values=valueArray, length=length)
+            self._memoryArray.writeMemory(address=address, values=valueArray)
 
         self._memoryBusLock.release()
         return
@@ -176,7 +176,7 @@ class MemoryIOController:
                                                                              length=length,
                                                                              isWrite=False)
         else:
-            extractedMemoryCells = self._memoryArray.extractMemory(address, length)
+            extractedMemoryCells = self._memoryArray.readMemory(address, length)
             valueToBeUnpacked = b""
 
             # Build a value list to be unpacked

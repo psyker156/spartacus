@@ -78,7 +78,7 @@ class InstructionFetchUnit:
         :return:
         """
         instructionForm = None
-        mc = self._memoryArray.extractMemory(address, 1)[0]
+        mc = self._memoryArray.readMemory(address, 1)[0]
         value = mc & 0xff   # Making sure we have an 8 bits value
 
         # Extracting type and instruction codes
@@ -109,7 +109,7 @@ class InstructionFetchUnit:
         instruction = None
 
         # First, we get the memory bits that we need!
-        memorySlice = self._memoryArray.extractMemory(address, form["length"])
+        memorySlice = self._memoryArray.readMemory(address, form["length"])
 
         # Now, build a big number (as in real big) with the extracted memory
         binaryInstruction = 0

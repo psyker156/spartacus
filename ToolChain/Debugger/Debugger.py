@@ -47,7 +47,7 @@ __author__ = "CSE"
 __copyright__ = "Copyright 2015, CSE"
 __credits__ = ["CSE"]
 __license__ = "GPL"
-__version__ = "2.0"
+__version__ = "2.1"
 __maintainer__ = "CSE"
 __status__ = "Dev"
 
@@ -414,7 +414,7 @@ class Debugger:
         # Using direct memory array access instead of memory IO controller
         # access in order to avoid the security elements related to the
         # IO controller.
-        memSlice = self.capua.ma.extractMemory(address=address, length=length)
+        memSlice = self.capua.ma.readMemory(address=address, length=length)
         self.debugLog("Displaying {} bytes from address {}".format(str(length), hex(address), ))
         # Deal with the display part
         for i in range(0, len(memSlice)):
