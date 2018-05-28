@@ -20,7 +20,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 """
 
-from CapuaEnvironment.MemoryArray.MemoryCell.MemoryCell import MemoryCell
 from Configuration.Configuration import MEMORY_START_AT, \
                                         MEMORY_CELL_INITIAL_VALUE, \
                                         MEMORY_END_AT
@@ -29,7 +28,7 @@ __author__ = "CSE"
 __copyright__ = "Copyright 2015, CSE"
 __credits__ = ["CSE"]
 __license__ = "GPL"
-__version__ = "2.0"
+__version__ = "2.1"
 __maintainer__ = "CSE"
 __status__ = "Dev"
 
@@ -50,25 +49,20 @@ class MemoryArray:
         environment to be configurable by the user with minimal code change.
         Configuration for memory cell array are in Configuration.Configuration
         """
-        self._memoryCellArray = []
-        for address in range(MEMORY_START_AT, MEMORY_END_AT):  # MEMORY_END_AT is NOT inclusive!!!
-            # Create a cell for each memory address available default permission is
-            # hardcoded to all access. This will be adjusted after Capua is "booted up".
-            mc = MemoryCell(permission=0b111, value=MEMORY_CELL_INITIAL_VALUE)
-            self._memoryCellArray.append(mc)
+        self._memoryCellArray = [
+            MEMORY_CELL_INITIAL_VALUE
+            for x in range(MEMORY_START_AT, MEMORY_END_AT)
+        ]
 
-    def extractMemory(self, address, length=1):
+    def readMemory(self, address, length=1):
         """
-        This method allows for extraction of a slice of contiguous memory
+        This method allows to read a slice of contiguous memory
         :param address: int, Address for which access is required
         :param length: int length of the required extraction
         :return: list of MemoryCell that are contiguous in memory
         """
-
-        # Making sure the length does not reach out of the memory
-        lengthLimit = MEMORY_END_AT - address
-        if length <= 0 or length > lengthLimit:
-            raise MemoryError("Access reaching out of bound of memory for address: {}".format(hex(address)))
+        # Check memory access is ok
+        self._validateAddressForLengthAccess(address, length)
 
         # Memory extraction from base
         baseIndex = self._computeArrayIndexFromAddress(address)
@@ -76,12 +70,43 @@ class MemoryArray:
 
         return memorySlice
 
+    def writeMemory(self, address, values):
+        """
+        This method will overwrite values from a given address
+        :param address: int, the address where the overwrite is to happen
+        :param values: int list, a list containing values to be writen in memory
+        :param length: int, length of the write operation
+        :return: none
+        """
+        length = len(values)
+
+        # Check memory access is ok
+        self._validateAddressForLengthAccess(address, length)
+
+        # Do memory access
+        base = self._computeArrayIndexFromAddress(address)
+        self._memoryCellArray[base:base + length] = values
+
+    def _validateAddressForLengthAccess(self, address, length):
+        """
+        This method does memory range access validation. It will validate
+        that a given memory address and length are actually available on
+        the system. In case an address/length it out of memory range a
+        MemoryError is raised.
+        :param address: int, the address where the memory check must start
+        :param length: int, the length for the memory check
+        :return: none
+        """
+        lengthLimit = MEMORY_END_AT - address
+        if address < MEMORY_START_AT or length <= 0 or length > lengthLimit:
+            raise MemoryError("Access reaching out of bound of memory for address: {}".format(hex(address)))
+
     def directMemoryCellAccess(self, address):
         """
         This will return the memory cell so caller can work directly on the cell itself instead of
         using the memory array to access the cell. Allow for more flexible access to memory.
         :param address: int, Address for which access is requires
-        :return: MemoryCell, memory cell required by accessing program
+        :return: int, memory cell (8 bits) required by accessing program
         """
         index = self._computeArrayIndexFromAddress(address)
         return self._memoryCellArray[index]

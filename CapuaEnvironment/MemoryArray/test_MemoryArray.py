@@ -32,7 +32,7 @@ __author__ = "CSE"
 __copyright__ = "Copyright 2015, CSE"
 __credits__ = ["CSE"]
 __license__ = "GPL"
-__version__ = "2.0"
+__version__ = "2.1"
 __maintainer__ = "CSE"
 __status__ = "Dev"
 
@@ -47,31 +47,61 @@ class TestMemoryArray(unittest.TestCase):
         """
         ma = MemoryArray()
         self.assertEqual(MEMORY_ARRAY_NUMBER_OF_MEMORY_CELL, len(ma._memoryCellArray))
-        for mc in ma.extractMemory(MEMORY_START_AT, MEMORY_ARRAY_NUMBER_OF_MEMORY_CELL):
-            self.assertEqual(0b111, mc._permission)
-            self.assertEqual(MEMORY_CELL_INITIAL_VALUE, mc._value)
+        for mc in ma.readMemory(MEMORY_START_AT, MEMORY_ARRAY_NUMBER_OF_MEMORY_CELL):
+            self.assertEqual(MEMORY_CELL_INITIAL_VALUE, mc)
 
-    def test_extractMemory(self):
+    def test_readMemory(self):
         """
-        Validates good working of the extractMemory method for MemoryArray
+        Validates good working of the readMemory method for MemoryArray
         """
         self.assertEqual(1,
-                         len(self.ma.extractMemory(MEMORY_START_AT, 1)))
+                         len(self.ma.readMemory(MEMORY_START_AT, 1)))
         self.assertEqual(5,
-                         len(self.ma.extractMemory(MEMORY_START_AT, 5)))
+                         len(self.ma.readMemory(MEMORY_START_AT, 5)))
         self.assertEqual(MEMORY_ARRAY_NUMBER_OF_MEMORY_CELL,
-                         len(self.ma.extractMemory(MEMORY_START_AT, MEMORY_ARRAY_NUMBER_OF_MEMORY_CELL)))
+                         len(self.ma.readMemory(MEMORY_START_AT, MEMORY_ARRAY_NUMBER_OF_MEMORY_CELL)))
         self.assertEqual(1,
-                         len(self.ma.extractMemory(MEMORY_END_AT - 1, 1)))
+                         len(self.ma.readMemory(MEMORY_END_AT - 1, 1)))
 
         self.assertRaises(MemoryError,
-                          self.ma.extractMemory,
+                          self.ma.readMemory,
                           MEMORY_END_AT - 5,
                           6)
         self.assertRaises(MemoryError,
-                          self.ma.extractMemory,
+                          self.ma.readMemory,
                           MEMORY_START_AT - 1,
                           6)
+
+    def test_writeMemory(self):
+        """
+        Validates good working of the writeMemory method for MemoryArray
+        """
+        self.ma.writeMemory(MEMORY_START_AT, [1])
+        self.assertEqual(1, self.ma.readMemory(MEMORY_START_AT, 1)[0])
+
+        self.ma.writeMemory(MEMORY_START_AT, [0, 0, 0, 1])
+        self.assertEqual(0, self.ma.readMemory(MEMORY_START_AT, 1)[0])
+        self.assertEqual(0, self.ma.readMemory(MEMORY_START_AT + 1, 1)[0])
+        self.assertEqual(0, self.ma.readMemory(MEMORY_START_AT + 2, 1)[0])
+        self.assertEqual(1, self.ma.readMemory(MEMORY_START_AT + 3, 1)[0])
+
+        self.assertRaises(MemoryError,
+                          self.ma.writeMemory,
+                          MEMORY_END_AT + 5,
+                          [1])
+        self.assertRaises(MemoryError,
+                          self.ma.writeMemory,
+                          MEMORY_START_AT - 1,
+                          [1])
+
+    def test_validateAddressForLengthAccess(self):
+        """
+        Validates good working of the _validateAddressForLengthAccess method
+        """
+        self.assertRaises(MemoryError, self.ma._validateAddressForLengthAccess, MEMORY_START_AT - 1, 1)
+        self.assertRaises(MemoryError, self.ma._validateAddressForLengthAccess, MEMORY_START_AT - 1, 4)
+        self.assertRaises(MemoryError, self.ma._validateAddressForLengthAccess, MEMORY_END_AT, 1)
+        self.assertRaises(MemoryError, self.ma._validateAddressForLengthAccess, MEMORY_START_AT - 1, 2)
 
     def test_directMemoryCellAccess(self):
         """
