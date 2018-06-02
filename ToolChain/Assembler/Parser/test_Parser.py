@@ -1217,7 +1217,12 @@ class TestParser(unittest.TestCase):
         codes = self.parser._findPossibleCodesForInstruction(partialInstruction)
         self.assertEqual(codes, [0b01000010, 0b01010010])
 
-        self.assertEqual(28, len(operationDescription))  # Validate that nothing was added without changing test case
+        partialInstruction = Instruction(skipValidation=True)
+        partialInstruction.operationMnemonic = "SVMR"
+        codes = self.parser._findPossibleCodesForInstruction(partialInstruction)
+        self.assertEqual(codes, [0b01110111])
+
+        self.assertEqual(29, len(operationDescription))  # Validate that nothing was added without changing test case
 
     def test_getInstructionCodeAndFormUsingPossibleCodesActi(self):
         """

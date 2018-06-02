@@ -47,7 +47,7 @@ __author__ = "CSE"
 __copyright__ = "Copyright 2015, CSE"
 __credits__ = ["CSE"]
 __license__ = "GPL"
-__version__ = "2.2"
+__version__ = "2.1"
 __maintainer__ = "CSE"
 __status__ = "Dev"
 
@@ -298,6 +298,10 @@ class Debugger:
         :param instruction: A valid and fully built instruction
         :return:
         """
+
+        if instruction is None:
+            return "Unknown"
+
         instructionString = ""
         instructionString += instruction.operationMnemonic + " "
         instructionString += "<" + str(instruction.flags) + \
@@ -421,13 +425,13 @@ class Debugger:
             valueString = ""
             # Direct access to _value is to avoid memory protection elements
             if displayFormat == "bin":
-                valueString = bin(memSlice[i])
+                valueString = bin(memSlice[i]._value)
             if displayFormat == "hex":
-                valueString = hex(memSlice[i])
+                valueString = hex(memSlice[i]._value)
             if displayFormat == "dec":
-                valueString = str(memSlice[i])
+                valueString = str(memSlice[i]._value)
             if displayFormat == "char":
-                valueString = chr(memSlice[i])
+                valueString = chr(memSlice[i]._value)
 
             addressString = hex(address + i)
             self.debugLog("{} - {}".format(addressString, valueString,))

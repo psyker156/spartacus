@@ -34,7 +34,7 @@ __author__ = "CSE"
 __copyright__ = "Copyright 2015, CSE"
 __credits__ = ["CSE"]
 __license__ = "GPL"
-__version__ = "2.0"
+__version__ = "2.1"
 __maintainer__ = "CSE"
 __status__ = "Dev"
 
@@ -43,25 +43,18 @@ class TestExecutionUnit(unittest.TestCase):
 
     ma = MemoryArray()
     mioc = MemoryIOController(ma)
-    ifu = InstructionFetchUnit(ma)
-    eu = ExecutionUnit(mioc, ifu, "System")
+    eu = ExecutionUnit("System")
+    ifu = InstructionFetchUnit(mioc, eu)
+    eu.ifu = ifu
+    eu.mioc = mioc
+    eu.mioc.eu = eu
 
     def test_init(self):
         """
         Validates good working of the __init__ method for ExecutionUnit
         def __init__(self, mioc: MemoryIOController=None, ifu: InstructionFetchUnit=None, name: str="System"):
         """
-        self.assertRaises(RuntimeError, ExecutionUnit, None, None, None)
-        self.assertRaises(RuntimeError, ExecutionUnit, self.mioc, self.ifu, None)
-        self.assertRaises(RuntimeError, ExecutionUnit, self.mioc, None, "System")
-        self.assertRaises(RuntimeError, ExecutionUnit, None, self.ifu, "System")
-        self.assertRaises(RuntimeError, ExecutionUnit, "test", self.ifu, "System")
-        self.assertRaises(RuntimeError, ExecutionUnit, self.mioc, "test", "System")
-        self.assertRaises(RuntimeError, ExecutionUnit, self.mioc, self.ifu, 0x41414141)
-
-        eu = ExecutionUnit(self.mioc, self.ifu, "System")
-        self.assertEqual(self.mioc, eu.mioc)
-        self.assertEqual(self.ifu, eu.ifu)
+        eu = ExecutionUnit("System")
         self.assertEqual("System", eu.name)
 
     def test_setupCore(self):
@@ -196,6 +189,17 @@ class TestExecutionUnit(unittest.TestCase):
         self.assertEqual(MEMORY_START_AT + 2, self.eu.I)
         self.assertEqual(0xAAAAAAAA, self.eu.IVR)
         self.assertEqual(0xAAAAAAAA, self.eu.A)
+
+        # SVMR
+        self.eu.setupCore(MEMORY_START_AT)
+        self.eu.A = 0xAAAAAAAA
+        self.mioc.memoryWriteAtAddressForLength(MEMORY_START_AT, 1, 0b01110111)
+        self.mioc.memoryWriteAtAddressForLength(MEMORY_START_AT + 1, 1, 0b00000000)  # Instruction goes: SVMR $A
+        self.eu.execute()
+        self.assertEqual(MEMORY_START_AT + 2, self.eu.I)
+        self.assertEqual(0xAAAAAAAA, self.eu.VMR)
+        self.assertEqual(0xAAAAAAAA, self.eu.A)
+        self.eu.VMR = 0     # Need to put it back to 0 for other tests to work!!!
 
         # HIRET - Deactivated Interrupts
         self.eu.setupCore(MEMORY_START_AT)
@@ -332,10 +336,14 @@ class TestExecutionUnit(unittest.TestCase):
         self.eu.IS = 1
         self.eu.IVR = 1
         self.eu.FLAGS = 1
+        self.eu.VMR = 1
+        self.eu.exceptionCode = 1
+        self.eu.exceptionAddress = 1
         self.eu.reset(0)  # Making sure we can set I to value requested
         count = self.eu.A + self.eu.B + self.eu.C + self.eu.D + self.eu.E + self.eu.F + self.eu.G + \
                 self.eu.A2 + self.eu.B2 + self.eu.C2 + self.eu.D2 + self.eu.E2 + self.eu.F2 + self.eu.G2 + \
-                self.eu.S + self.eu.S2 + self.eu.IS +self.eu.IVR + self.eu.I + self.eu.FLAGS
+                self.eu.S + self.eu.S2 + self.eu.IS +self.eu.IVR + self.eu.I + self.eu.FLAGS + self.eu.VMR + \
+                self.eu.exceptionCode + self.eu.exceptionAddress
         self.assertEqual(count, 0)
         self.eu.setupCore(MEMORY_START_AT)
         self.eu.A = 1
@@ -357,9 +365,13 @@ class TestExecutionUnit(unittest.TestCase):
         self.eu.IS = 1
         self.eu.IVR = 1
         self.eu.FLAGS = 1
+        self.eu.VMR = 1
+        self.eu.exceptionCode = 1
+        self.eu.exceptionAddress = 1
         self.eu.reset()  # Making sure we can rely on the default value for I after reset
         count = self.eu.A + self.eu.B + self.eu.C + self.eu.D + self.eu.E + self.eu.F + self.eu.G + \
                 self.eu.A2 + self.eu.B2 + self.eu.C2 + self.eu.D2 + self.eu.E2 + self.eu.F2 + self.eu.G2 + \
-                self.eu.S + self.eu.S2 + self.eu.IS + self.eu.IVR + self.eu.I + self.eu.FLAGS
+                self.eu.S + self.eu.S2 + self.eu.IS + self.eu.IVR + self.eu.I + self.eu.FLAGS + self.eu.VMR + \
+                self.eu.exceptionCode + self.eu.exceptionAddress
         self.assertEqual(count, MEMORY_START_AT)
 

@@ -22,14 +22,18 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 from CapuaEnvironment.Instruction.Instruction import Instruction
 from CapuaEnvironment.IntructionFetchUnit.FormDescription import formDescription
-from CapuaEnvironment.MemoryArray.MemoryArray import MemoryArray
-from Configuration.Configuration import MEMORY_START_AT
+from CapuaEnvironment.IOComponent.MemoryIOController import MemoryIOController
+from Configuration.Configuration import MEMORY_START_AT, \
+                                        MEMORY_MAXIMUM_READ_WRITE_SIZE, \
+                                        VIRTUAL_NULL, \
+                                        EXCEPTION_BAD_INSTRUCTION_FETCH, \
+                                        EXCEPTION_NO_EXECUTE_PERMISSION
 
 __author__ = "CSE"
 __copyright__ = "Copyright 2015, CSE"
 __credits__ = ["CSE"]
 __license__ = "GPL"
-__version__ = "2.1"
+__version__ = "2.2"
 __maintainer__ = "CSE"
 __status__ = "Dev"
 
@@ -42,18 +46,23 @@ class InstructionFetchUnit:
     Since it is available, it is also used in the debugger in order to provide code
     disassembling functionality.
     """
-    _memoryArray = None
+    _memoryIOController = None
+    _eu = None                  # Need EU access to signal exceptions
 
-    def __init__(self, memoryArray: MemoryArray=None):
+    def __init__(self, memoryIOController=None, eu=None):
         """
         Simply initialize an instance of this class... Nothing much to say. Actual logic is elsewhere.
-        :param memoryArray: This has to be a non None MemoryArray
+        :param memoryIOController: This has to be a non None MemoryArray
+        :param eu: ExecutionUnit to which this fetch unit is attached
         """
-        if memoryArray is None:
+        if memoryIOController is None:
             raise RuntimeError("Capua InstructionFetchUnit init error")
-        self._memoryArray = memoryArray
+        self._memoryIOController = memoryIOController
+        if eu is None:
+            raise RuntimeError("Capua InstructionFetchUnit init error")
+        self._eu = eu
 
-    def fetchInstructionAtAddress(self, address=MEMORY_START_AT):
+    def fetchInstructionAtAddress(self, address=MEMORY_START_AT, vmr=VIRTUAL_NULL):
         """
         This is the high level fetching method for this class. It is the only one
         that should be called by the user. Note that the address is NOT validated here
@@ -63,9 +72,27 @@ class InstructionFetchUnit:
         :return: Instruction, nextInstructionAddress
         """
 
+        instruction = None
+        nextInstructionAddress = None
+        accessGranted = True
+
+        # First thing, do we have execute access at the given address?
+        if vmr != VIRTUAL_NULL:
+            ttEntry = self._memoryIOController.virtualMemoryManager.getTTEntryForAddress(address, vmr)
+            accessGranted = self._memoryIOController.virtualMemoryManager.ttEntryIsExecutable(ttEntry)
+
+        if not accessGranted:
+            # an illegal memory access just happened!
+            self._eu.signalHardwareException(interruptNumber=EXCEPTION_NO_EXECUTE_PERMISSION,
+                                             exceptionCode=0,
+                                             faultyInstruction=self._eu.I)
+
+        # Execute access granted, fetch the instruction!
         instructionForm = self._fetchInstructionFormAtAddress(address)
-        instruction = self._fetchInstructionAtAddressUsingForm(address, instructionForm)
-        nextInstructionAddress = address + instructionForm["length"]
+
+        if instructionForm is not None:
+            instruction = self._fetchInstructionAtAddressUsingForm(address, instructionForm)
+            nextInstructionAddress = address + instructionForm["length"]
 
         return instruction, nextInstructionAddress
 
@@ -78,7 +105,7 @@ class InstructionFetchUnit:
         :return:
         """
         instructionForm = None
-        mc = self._memoryArray.readMemory(address, 1)[0]
+        mc = self._memoryIOController.memoryReadAtAddressForLength(address, 1)
         value = mc & 0xff   # Making sure we have an 8 bits value
 
         # Extracting type and instruction codes
@@ -94,7 +121,9 @@ class InstructionFetchUnit:
         if instructionForm is None:
             # If we are here, no instruction were found that are corresponding
             # a user is trying to execute an invalid instruction!
-            raise ValueError("Invalid instruction detected at address {}".format(hex(address)))
+            self._eu.signalHardwareException(interruptNumber=EXCEPTION_BAD_INSTRUCTION_FETCH,
+                                             exceptionCode=0,
+                                             faultyInstruction=self._eu.I)
 
         return instructionForm
 
@@ -108,18 +137,25 @@ class InstructionFetchUnit:
         """
         instruction = None
 
-        # First, we get the memory bits that we need!
-        memorySlice = self._memoryArray.readMemory(address, form["length"])
+        # First, we need to figure how many reads need to happen
+        numberOfMaximumReadSizeOperations = form["length"] // MEMORY_MAXIMUM_READ_WRITE_SIZE
+        partialReadSize = form["length"] % MEMORY_MAXIMUM_READ_WRITE_SIZE
 
-        # Now, build a big number (as in real big) with the extracted memory
-        binaryInstruction = 0
-        for mc in memorySlice:
-            binaryInstruction <<= 8
-            binaryInstruction |= mc & 0xff  # Only 8 bits can be used at a time
+        # Now we can construct a very big number...
+        memoryContent = 0
+        readAddress = address
+        for i in range(0, numberOfMaximumReadSizeOperations):
+            memoryContent <<= MEMORY_MAXIMUM_READ_WRITE_SIZE * 8
+            memoryContent |= self._memoryIOController.memoryReadAtAddressForLength(readAddress,
+                                                                                   MEMORY_MAXIMUM_READ_WRITE_SIZE)
+            readAddress += MEMORY_MAXIMUM_READ_WRITE_SIZE
+
+        memoryContent <<= partialReadSize * 8
+        memoryContent |= self._memoryIOController.memoryReadAtAddressForLength(readAddress, partialReadSize)
 
         # binaryInstruction is now  a big number representing the instruction
         # Time to create the instruction using this big number!
         # Parsing of the details of the instruction will happen in the Instruction class
-        instruction = Instruction(binaryInstruction, form)
+        instruction = Instruction(memoryContent, form)
 
         return instruction

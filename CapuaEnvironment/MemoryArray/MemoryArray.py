@@ -28,7 +28,7 @@ __author__ = "CSE"
 __copyright__ = "Copyright 2015, CSE"
 __credits__ = ["CSE"]
 __license__ = "GPL"
-__version__ = "2.1"
+__version__ = "2.2"
 __maintainer__ = "CSE"
 __status__ = "Dev"
 
@@ -101,7 +101,7 @@ class MemoryArray:
         if address < MEMORY_START_AT or length <= 0 or length > lengthLimit:
             raise MemoryError("Access reaching out of bound of memory for address: {}".format(hex(address)))
 
-    def directMemoryCellAccess(self, address):
+    def _directMemoryCellAccess(self, address):
         """
         This will return the memory cell so caller can work directly on the cell itself instead of
         using the memory array to access the cell. Allow for more flexible access to memory.

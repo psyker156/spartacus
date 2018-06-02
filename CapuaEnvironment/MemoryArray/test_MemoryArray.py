@@ -32,7 +32,7 @@ __author__ = "CSE"
 __copyright__ = "Copyright 2015, CSE"
 __credits__ = ["CSE"]
 __license__ = "GPL"
-__version__ = "2.1"
+__version__ = "2.2"
 __maintainer__ = "CSE"
 __status__ = "Dev"
 
@@ -105,12 +105,12 @@ class TestMemoryArray(unittest.TestCase):
 
     def test_directMemoryCellAccess(self):
         """
-        Validates good working of the directMemoryCellAccess method for MemoryArray
+        Validates good working of the _directMemoryCellAccess method for MemoryArray
         """
-        self.assertIsNotNone(self.ma.directMemoryCellAccess(MEMORY_START_AT))       # Valid memory address
-        self.assertIsNotNone(self.ma.directMemoryCellAccess(MEMORY_END_AT - 1))     # Valid memory address
-        self.assertRaises(MemoryError, self.ma.directMemoryCellAccess, MEMORY_START_AT - 1)     # Invalid memory access
-        self.assertRaises(MemoryError, self.ma.directMemoryCellAccess, MEMORY_END_AT)           # Invalid memory access
+        self.assertIsNotNone(self.ma._directMemoryCellAccess(MEMORY_START_AT))       # Valid memory address
+        self.assertIsNotNone(self.ma._directMemoryCellAccess(MEMORY_END_AT - 1))     # Valid memory address
+        self.assertRaises(MemoryError, self.ma._directMemoryCellAccess, MEMORY_START_AT - 1)     # Invalid memory access
+        self.assertRaises(MemoryError, self.ma._directMemoryCellAccess, MEMORY_END_AT)           # Invalid memory access
 
     def test_computeArrayIndexFromAddress(self):
         """

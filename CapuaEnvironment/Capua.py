@@ -29,7 +29,7 @@ __author__ = "CSE"
 __copyright__ = "Copyright 2015, CSE"
 __credits__ = ["CSE"]
 __license__ = "GPL"
-__version__ = "2.0"
+__version__ = "2.1"
 __maintainer__ = "CSE"
 __status__ = "Dev"
 
@@ -45,24 +45,21 @@ class Capua:
     ifu = None
     eu = None
 
-    def __init__(self, ma=None, mioc=None, name="System"):
+    def __init__(self, name="System"):
         """
         Preparing the whole execution environment for this Capua instance. Note that a single memory
         array can be shared between multiple Capua environment.
         """
+        self.eu = ExecutionUnit(name)
 
-        # Two execution units CAN share a single memory array and MIOC
-        if ma is None:
-            self.ma = MemoryArray()
-        else:
-            self.ma = ma
+        self.ma = MemoryArray()
+        self.mioc = MemoryIOController(self.ma, testOnly=False)
+        self.mioc.eu = self.eu
+        self.ifu = InstructionFetchUnit(self.mioc, self.eu)
 
-        if mioc is None:
-            self.mioc = MemoryIOController(self.ma, testOnly=False)
-        else:
-            self.mioc = mioc
+        self.eu.mioc = self.mioc
+        self.eu.ifu = self.ifu
 
-        self.ifu = InstructionFetchUnit(self.ma)
-        self.eu = ExecutionUnit(self.mioc, self.ifu, name)
+
 
 

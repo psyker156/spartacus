@@ -21,11 +21,15 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 """
 
 from CapuaEnvironment.MemoryArray.MemoryArray import MemoryArray
+from CapuaEnvironment.VirtualMemoryManager.VirtualMemoryManager import VirtualMemoryManager
 from CapuaEnvironment.IOComponent.MemoryMappedDevices.Clock.Clock import Clock
 from CapuaEnvironment.IOComponent.MemoryMappedDevices.Terminal.Terminal import Terminal
 from CapuaEnvironment.IOComponent.MemoryMappedDevices.InterruptClock.InterruptClock import InterruptClock
 from CapuaEnvironment.IOComponent.MemoryMappedDevices.HardDrive.HardDrive import HardDrive
-from Configuration.Configuration import MEMORY_START_AT
+from Configuration.Configuration import MEMORY_START_AT, \
+                                        MEMORY_MAXIMUM_READ_WRITE_SIZE, \
+                                        VIRTUAL_NULL, \
+                                        ACCESS_GRANTED
 
 import struct
 import threading
@@ -34,7 +38,7 @@ __author__ = "CSE"
 __copyright__ = "Copyright 2015, CSE"
 __credits__ = ["CSE"]
 __license__ = "GPL"
-__version__ = "2.1"
+__version__ = "2.2"
 __maintainer__ = "CSE"
 __status__ = "Dev"
 
@@ -90,6 +94,7 @@ class MemoryIOController:
     """
 
     _memoryArray = None
+    virtualMemoryManager = None
     _memoryMappedDevice = None
 
     def __init__(self, memoryArray: MemoryArray=None, testOnly: bool=True):
@@ -103,6 +108,8 @@ class MemoryIOController:
             raise RuntimeError("Capua MemoryIOController Error - Setting up memoryArray")
 
         self._memoryArray = memoryArray
+        self.virtualMemoryManager = VirtualMemoryManager(self._memoryArray)
+
         self._memoryMappedDevice = []
 
         self.eu = None
@@ -130,6 +137,13 @@ class MemoryIOController:
 
         self._memoryBusLock = threading.Lock()
 
+    def flushTLBCache(self):
+        """
+        Proxy method to call into the Virtual Memory Manager
+        :return:
+        """
+        self.virtualMemoryManager.tlbFlush()
+
     def memoryWriteAtAddressForLength(self, address=0x00, length=4, value=0x00, source="System"):
         """
         This handle a memory write and is meant to be the memory access point for the execution unit.
@@ -142,6 +156,9 @@ class MemoryIOController:
         """
 
         self._memoryBusLock.acquire()
+
+        if self.eu.VMR != VIRTUAL_NULL:
+            address = self.virtualMemoryManager.processTranslation(address, self.eu.VMR)
 
         # If action taken on memory mapped hardware we need to send it to the hardware!
         if address < MEMORY_START_AT:
@@ -159,16 +176,23 @@ class MemoryIOController:
         self._memoryBusLock.release()
         return
 
-    def memoryReadAtAddressForLength(self, address=0x00, length=4):
+    def memoryReadAtAddressForLength(self, address=0x00, length=MEMORY_MAXIMUM_READ_WRITE_SIZE):
         """
         This handle a memory read and is meant to be the memory access point for the execution unit.
         It is also the memory access point for memory mapped hardware.
         :param address: int, Address at which we will read
-        :param length: int, the length for the read (maximum is 4 bytes)
+        :param length: int, the length for the read (maximum is MEMORY_MAXIMUM_READ_WRITE_SIZE bytes)
         :return: int value
         """
+        if length > MEMORY_MAXIMUM_READ_WRITE_SIZE:
+            raise MemoryError("Read attempt for a value larger than" +
+                              str(MEMORY_MAXIMUM_READ_WRITE_SIZE) +
+                              " bytes.")
 
         self._memoryBusLock.acquire()
+
+        if self.eu.VMR != VIRTUAL_NULL:
+            address = self.virtualMemoryManager.processTranslation(address, self.eu.VMR)
 
         # If action taken on memory mapped hardware we need to send it to the hardware!
         if address < MEMORY_START_AT:

@@ -41,7 +41,11 @@ from Configuration.Configuration import REGISTER_A, \
                                         REGISTER_S, \
                                         REGISTER_S2, \
                                         MEMORY_END_AT, \
-                                        MEMORY_START_AT
+                                        MEMORY_START_AT, \
+                                        VIRTUAL_NULL, \
+                                        ACCESS_GRANTED, \
+                                        EXCEPTION_BAD_INSTRUCTION_FETCH, \
+                                        EXCEPTION_DIVIDE_BY_ZERO
 
 import threading
 
@@ -49,7 +53,7 @@ __author__ = "CSE"
 __copyright__ = "Copyright 2015, CSE"
 __credits__ = ["CSE"]
 __license__ = "GPL"
-__version__ = "2.0"
+__version__ = "2.1"
 __maintainer__ = "CSE"
 __status__ = "Dev"
 
@@ -81,6 +85,10 @@ class ExecutionUnit:
     FLAGS = 0b000   # 3 bits limited ZLH = Zero, Lower, Higher
     IS = 0b0        # 1 bit boolean indicating if interrupts are activated or not
     IVR = 0x00      # 32 bits Interrupt Vector Register. This points to the area containing the interrupts vector
+    VMR = VIRTUAL_NULL      # 32 bits pointer to physical address for a Translation Table (virtual memory)
+
+    exceptionCode = 0       # 32 bits, this is a code set by hardware generating exception
+    exceptionAddress = 0    # 32 bits, this is the address of the instruction that is running when exception happens
 
     # This is the buffer/register that tells if an hardware interrupt is being signaled
     # None indicates no interrupt waiting to be processed. Anything else would
@@ -89,6 +97,8 @@ class ExecutionUnit:
     # This means that a single hardware interrupt at a time can be handled.
     _interruptSignal = None
     interruptSignalLock = threading.Lock()
+    _exceptionSignal = None
+    exceptionSignalLock = threading.Lock()
 
     # Other required hardware components
     mioc = None  # MemoryInputOutputController
@@ -99,24 +109,17 @@ class ExecutionUnit:
     # program when in game mode
     name = "System"
 
-    def __init__(self, mioc: MemoryIOController=None, ifu: InstructionFetchUnit=None, name: str="System"):
+    previousI = 0       # This is used to keep track of exception causing code
+    previousFlags = 0   # Need to be able to reset flags when handling an exception
+
+    currentPrivilegeLevel = True    # This is currently in Kernel mode
+
+    def __init__(self, name: str="System"):
         """
         This will setup the ExecutionUnit so that it is in a state that it can be used to run code
         from memory.
-        :param mioc: A MemoryIOController for this core so that it can have access to memory
-        :param ifu: An InstructionFetchUnit so this core can correctly get the instruction from memory
         :param name: str, a name identifying the core
         """
-        if mioc is None or type(mioc) is not MemoryIOController:
-            raise RuntimeError("Capua core initialisation error - unstable state")
-        if ifu is None or type(ifu) is not InstructionFetchUnit:
-            raise RuntimeError("Capua core initialisation error - unstable state")
-        if name is None or type(name) is not str:
-            raise RuntimeError("Capua core initialisation error - unstable state")
-
-        self.mioc = mioc
-        self.mioc.eu = self     # Need to make MIOC eu aware for memory mapped device to be able to signal interrupts
-        self.ifu = ifu
         self.name = name
         self.lu = LogicUnit(self)  # LogicUnit is lower in this file
 
@@ -161,6 +164,11 @@ class ExecutionUnit:
         self.S = 0
         self.S2 = 0
         self.FLAGS = 0
+        self.VMR = VIRTUAL_NULL
+
+        self.exceptionCode = 0
+        self.exceptionAddress = 0
+
 
     def halt(self):
         """
@@ -183,9 +191,29 @@ class ExecutionUnit:
         # that is executed without it being visible to the debugger.
 
         # First we need to run the current instruction
-        instruction, nextInstructionAddress = self.ifu.fetchInstructionAtAddress(self.I)
+        instruction, nextInstructionAddress = self.ifu.fetchInstructionAtAddress(self.I, self.VMR)
+
+        # We need to check for exception caused by the FetchUnit
+        self.exceptionSignalLock.acquire()
+        currentException = self._exceptionSignal
+        self.exceptionSignalLock.release()
+        if currentException is not None:
+            self._handleHardwareException()
+            return
+
+        self.previousI = self.I          # This is kept in case of an exception at run time
+        self.previousFlags = self.FLAGS
         self.I = nextInstructionAddress
         self.lu.executeInstruction(instruction)
+
+        # We need to check for exception caused by the attempted execution of a given instruction
+        self.exceptionSignalLock.acquire()
+        currentException = self._exceptionSignal
+        self.exceptionSignalLock.release()
+        if currentException is not None:
+            self.FLAGS = self.previousFlags     # Reset the flags to what they were before instruction
+            self._handleHardwareException()
+            return
 
         # Then we can handle the interrupt
         self.interruptSignalLock.acquire()
@@ -237,7 +265,7 @@ class ExecutionUnit:
         elif registerCode == REGISTER_S2:
             self.S2 = value
         else:
-            raise ValueError("Core {} caused an invalid instruction to be executed - GameOver". format(self.name,))
+            raise ValueError("Core {} caused executed an invalid instruction.". format(self.name,))
 
     def getRegisterValue(self, registerCode=None):
         """
@@ -302,6 +330,29 @@ class ExecutionUnit:
 
         return signalingValue
 
+    def signalHardwareException(self, interruptNumber=None, exceptionCode=None, faultyInstruction=None):
+        """
+        This will safely line up an exception to be handled by the execution unit.
+        :param interruptNumber: int, this is the number to be used for the interrupt handler
+        :param exceptionCode: int, a code explaining the exception
+        :param faultyInstruction: int, the address of the instruction that caused the exception
+        :return: bool, True if interrupt was signaled, false otherwise. This gives a second chance if ever needed
+        """
+        signalingValue = False
+
+        self.exceptionSignalLock.acquire()
+
+        # Need to check Interrupt State before signaling
+        self._exceptionSignal = interruptNumber
+        self.exceptionCode = exceptionCode
+        self.exceptionAddress = faultyInstruction
+        signalingValue = True
+
+        self.exceptionSignalLock.release()
+
+        return signalingValue
+
+
     def _handleHardwareInterrupt(self):
         """
         This will handle an hardwareInterrupt. It will deactivate the interrupts on a given core and
@@ -320,6 +371,47 @@ class ExecutionUnit:
         self._interruptSignal = None  # Interrupt has been handled, we need to reset this
 
         self.interruptSignalLock.release()
+
+
+    def _handleHardwareException(self):
+        """
+        This will handle an hardwareException. It will deactivate the interrupts on a given core and
+        attempt at jumping into the code handling the latest successfully signaled exception.
+        :return: Nothing
+        """
+
+        self.exceptionSignalLock.acquire()
+
+        self.IS = 0  # Interrupts are now deactivated across the core
+
+        intInstruction = Instruction(binaryInstruction=(0b10000011 << 8 * 4) | self._exceptionSignal,
+                                     form=formDescription["InsImm"])
+        self.lu.executeInstruction(instruction=intInstruction, hardware=True)
+
+        self._exceptionSignal = None  # Interrupt has been handled, we need to reset this
+
+        self.exceptionSignalLock.release()
+
+    def checkAccessLevel(self, execute=[], available=[], signal=True):
+        """
+        This method is to be used by the LogicUnit to validate access to memory
+        before running instructions.
+        :param execute: list, Address with execute required
+        :param available: list, Address with available required
+        :param signal:, bool, if true, this method is responsible for signaling the access exception
+        :return: int, the access level, = to ACCESS_GRANTED if so
+        """
+        # Proceed to access validation
+        accessLevel = self.mioc.virtualMemoryManager.validateAccessRequirements(self.currentPrivilegeLevel,
+                                                                                execute=execute,
+                                                                                available=available,
+                                                                                vmr=self.VMR)
+        if signal and accessLevel != ACCESS_GRANTED:
+            # Need to signal exception
+            self.signalHardwareException(interruptNumber=accessLevel,
+                                         exceptionCode=0,
+                                         faultyInstruction=self.previousI)
+        return accessLevel
 
 
 class LogicUnit:
@@ -461,9 +553,16 @@ class LogicUnit:
         CALL reg   : Total Length 1B : ID 0b0011 00 : R 00 : exec time = 2 : Transfer execution to imm pointer pushing return address to the stack
         :return:
         """
+        stackPointer = self.eu.S + 4  # Stack grows upward!!!
+
+        # Proceed to access validation
+        accessLevel = self.eu.checkAccessLevel(available=[stackPointer])
+
+        if accessLevel != ACCESS_GRANTED:
+            # Can't run instruction! Access is not granted!
+            return 0
 
         # Lets adjust the stack!
-        stackPointer = self.eu.S + 4  # Stack grows upward!!!
         self.eu.S = stackPointer
 
         # return I address
@@ -540,6 +639,10 @@ class LogicUnit:
 
         destinationValue = self.eu.getRegisterValue(registerCode=self.ci.destinationRegister)
 
+        if destinationValue == 0:
+            # Divide by 0 exception
+            self.eu.signalHardwareException(EXCEPTION_DIVIDE_BY_ZERO, 0, self.eu.previousI)
+
         if self.ci.sourceImmediate is None:
             sourceValue = self.eu.getRegisterValue(registerCode=self.ci.sourceRegister)
         else:
@@ -559,6 +662,14 @@ class LogicUnit:
         :param hardware: bool, optional, hardware, This indicates if the instruction executed was hardware generated
         :return: 0, this method does not affect the flags register
         """
+
+        # Proceed to access validation
+        accessLevel = self.eu.checkAccessLevel(available=[self.eu.S, self.eu.S - 4])
+
+        if accessLevel != ACCESS_GRANTED:
+            # Can't run instruction! Access is not granted!
+            return 0
+
         currentInstruction = self.ci
 
         oldAValue = self.eu.A
@@ -595,6 +706,16 @@ class LogicUnit:
         :param: bool, optional, hardware, This indicates if the interrupt has been hardware generated
         :return:
         """
+
+        # Proceed to access validation
+        # todo access validation is not complete here!
+        accessLevel = self.eu.checkAccessLevel(available=[self.eu.S, self.eu.S + 4, self.eu.IVR], signal=False)
+
+        if accessLevel != ACCESS_GRANTED:
+            # Can't run instruction! Access is not granted!
+            # This since this was in interrupt handling, this causes a fatal error
+            raise RuntimeError("Fatal Error - Required memory access not available when interrupting " +
+                               str(accessLevel))
 
         sourceValue = 0
 
@@ -646,7 +767,10 @@ class LogicUnit:
 
         # Validate flags
         if 0 > self.ci.flags > 0b111:
-            raise ValueError("Invalid instruction format detected")
+            self.eu.signalHardwareException(interruptNumber=EXCEPTION_BAD_INSTRUCTION_FETCH,
+                                            exceptionCode=0,
+                                            faultyInstruction=self.eu.previousI)
+            return 0
 
         nextI = self.eu.I  # This is already calculated with the next I value
 
@@ -662,6 +786,7 @@ class LogicUnit:
             nextI = sourceValue
 
         self.eu.I = nextI
+
         return 0
 
     def JMPR(self, hardware=False):
@@ -682,7 +807,10 @@ class LogicUnit:
 
         # Validate flags
         if 0 > self.ci.flags > 0b111:
-            raise ValueError("Invalid instruction format detected")
+            self.eu.signalHardwareException(interruptNumber=EXCEPTION_BAD_INSTRUCTION_FETCH,
+                                            exceptionCode=0,
+                                            faultyInstruction=self.eu.previousI)
+            return 0
 
         nextI = self.eu.I  # This is already calculated with the next I value
 
@@ -725,6 +853,13 @@ class LogicUnit:
         else:
             sourceValue = self.ci.sourceImmediate
 
+        # Proceed to access validation
+        accessLevel = self.eu.checkAccessLevel(available=[sourceValue, sourceValue + 3])
+
+        if accessLevel != ACCESS_GRANTED:
+            # Can't run instruction! Access is not granted!
+            return 0
+
         result = self.eu.mioc.memoryReadAtAddressForLength(sourceValue, self.ci.width)
         self.eu.setRegisterValue(self.ci.destinationRegister, result)
 
@@ -761,6 +896,13 @@ class LogicUnit:
             valueMask <<= 8
             valueMask |= 0xFF
         sourceValue &= valueMask
+
+        # Proceed to access validation
+        accessLevel = self.eu.checkAccessLevel(available=[destinationValue, destinationValue + 3])
+
+        if accessLevel != ACCESS_GRANTED:
+            # Can't run instruction! Access is not granted!
+            return 0
 
         self.eu.mioc.memoryWriteAtAddressForLength(destinationValue,
                                                    self.ci.width,
@@ -868,6 +1010,12 @@ class LogicUnit:
         POP Reg     : Total Length 1B : ID 0b0010 10 : R 00 : exec time = 1 : Pop to pof stack to register
         :return:
         """
+        # Proceed to access validation
+        accessLevel = self.eu.checkAccessLevel(available=[self.eu.S, self.eu.S - 4, self.eu.S - 7])
+
+        if accessLevel != ACCESS_GRANTED:
+            # Can't run instruction! Access is not granted!
+            return 0
 
         stackPointer = self.eu.S
 
@@ -895,6 +1043,12 @@ class LogicUnit:
         PUSH Imm   : Total Length 5B : ID 0b0010 01 : I 4B : exec time = 2 : Push value of register on top of the stack
         :return:
         """
+        # Proceed to access validation
+        accessLevel = self.eu.checkAccessLevel(available=[self.eu.S, self.eu.S + 4, self.eu.S + 7])
+
+        if accessLevel != ACCESS_GRANTED:
+            # Can't run instruction! Access is not granted!
+            return 0
 
         # Lets adjust the stack!
         stackPointer = self.eu.S
@@ -925,6 +1079,13 @@ class LogicUnit:
         RET       : Total Length 1B : ID 0b1001 0100 : exec time = 1 : Return from a function call
         :return:
         """
+
+        # Proceed to access validation
+        accessLevel = self.eu.checkAccessLevel(available=[self.eu.S, self.eu.S - 4, self.eu.S - 7])
+
+        if accessLevel != ACCESS_GRANTED:
+            # Can't run instruction! Access is not granted!
+            return 0
 
         stackPointer = self.eu.S
 
@@ -958,6 +1119,13 @@ class LogicUnit:
 
         # This will be saved back in the register at the end of the operation
         destinationPointer = self.eu.getRegisterValue(registerCode=REGISTER_A)
+
+        # Proceed to access validation
+        accessLevel = self.eu.checkAccessLevel(available=[destinationPointer])
+
+        if accessLevel != ACCESS_GRANTED:
+            # Can't run instruction! Access is not granted!
+            return 0
 
         if self.ci.sourceImmediate is None:
             sourceValue = self.eu.getRegisterValue(registerCode=self.ci.sourceRegister)
@@ -1083,6 +1251,22 @@ class LogicUnit:
 
         result = destinationValue - sourceValue
         self.eu.setRegisterValue(self.ci.destinationRegister, result)
+
+        return 0
+
+    def SVMR(self, hardware=False):
+        """
+        This instruction loads the Virtual Memory Register with a value given in the sReg
+        1 possibility:
+        SVMR sReg
+        :return: 0, resets the flags
+        """
+        sourceValue = self.eu.getRegisterValue(registerCode=self.ci.sourceRegister)
+        sourceValue &= 0xFFFFFFFF
+        self.eu.VMR = sourceValue
+
+        # Because of the VMR reload, the TLB needs to be flushed
+        self.eu.mioc.flushTLBCache()
 
         return 0
 

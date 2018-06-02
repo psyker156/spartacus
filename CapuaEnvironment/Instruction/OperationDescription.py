@@ -61,5 +61,6 @@ operationDescription = {
     "SHR": [0b01100100, 0b10011001],
     "SNT": [0b10000000, 0b01110001],  # Not implemented at current time, DO NOT USE
     "SUB": [0b01100111, 0b10010011],
+    "SVMR": [0b01110111],
     "XOR": [0b01100011, 0b10010000]
 }

@@ -22,6 +22,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 import unittest
 
+from CapuaEnvironment.ExecutionUnit.ExecutionUnit import ExecutionUnit
+from CapuaEnvironment.IntructionFetchUnit.InstructionFetchUnit import InstructionFetchUnit
 from CapuaEnvironment.MemoryArray.MemoryArray import MemoryArray
 from CapuaEnvironment.IOComponent.MemoryIOController import MemoryIOController
 from Configuration.Configuration import MEMORY_START_AT
@@ -39,6 +41,11 @@ class TestMemoryIOController(unittest.TestCase):
 
     ma = MemoryArray()
     mioc = MemoryIOController(ma)
+    eu = ExecutionUnit("System")
+    ifu = InstructionFetchUnit(mioc, eu)
+    eu.ifu = ifu
+    eu.mioc = mioc
+    eu.mioc.eu = eu
 
     def test_init(self):
         """

@@ -22,8 +22,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 import unittest
 
+from CapuaEnvironment.ExecutionUnit.ExecutionUnit import ExecutionUnit
 from CapuaEnvironment.IntructionFetchUnit.InstructionFetchUnit import InstructionFetchUnit
 from CapuaEnvironment.IntructionFetchUnit.FormDescription import formDescription
+from CapuaEnvironment.IOComponent.MemoryIOController import MemoryIOController
 from CapuaEnvironment.MemoryArray.MemoryArray import MemoryArray
 from Configuration.Configuration import MEMORY_START_AT
 
@@ -31,7 +33,7 @@ __author__ = "CSE"
 __copyright__ = "Copyright 2015, CSE"
 __credits__ = ["CSE"]
 __license__ = "GPL"
-__version__ = "2.1"
+__version__ = "2.2"
 __maintainer__ = "CSE"
 __status__ = "Dev"
 
@@ -39,7 +41,12 @@ __status__ = "Dev"
 class TestInstructionFetchUnit(unittest.TestCase):
 
     ma = MemoryArray()
-    ifu = InstructionFetchUnit(ma)
+    mioc = MemoryIOController(ma)
+    eu = ExecutionUnit("System")
+    ifu = InstructionFetchUnit(mioc, eu)
+    eu.ifu = ifu
+    eu.mioc = mioc
+    eu.mioc.eu = eu
 
     def test_init(self):
         """
@@ -47,15 +54,18 @@ class TestInstructionFetchUnit(unittest.TestCase):
         """
         self.assertRaises(RuntimeError, InstructionFetchUnit)  # IFU needs a memory array to work with
         ma = MemoryArray()
-        ifu = InstructionFetchUnit(ma)
-        self.assertEqual(ifu._memoryArray, ma)
+        mioc = MemoryIOController(ma)
+        eu = ExecutionUnit("System")
+        ifu = InstructionFetchUnit(mioc, eu)
+        self.assertEqual(ifu._memoryIOController, mioc)
+        self.assertEqual(ifu._eu, eu)
 
     def test_fetchInstructionAtAddress(self):
         """
         Validates good working of the fetchInstructionAtAddress method for InstructionFetchUnit
         """
-        self.ifu._memoryArray.writeMemory(MEMORY_START_AT,
-                                          [0xFF])  # Insert nop instruction in memory
+
+        self.ifu._memoryIOController.memoryWriteAtAddressForLength(MEMORY_START_AT, 1, 0xFF)
         instruction, nextInstructionAddress = self.ifu.fetchInstructionAtAddress(MEMORY_START_AT)
         self.assertIsNotNone(instruction.instructionCode)
         self.assertIsNone(instruction.sourceRegister)
@@ -66,8 +76,7 @@ class TestInstructionFetchUnit(unittest.TestCase):
         self.assertIsNone(instruction.flags)
         self.assertEqual(nextInstructionAddress, MEMORY_START_AT + 1)
 
-        self.ifu._memoryArray.writeMemory(MEMORY_START_AT,
-                                          [0b00010000])  # Insert InsWidthRegReg instruction type in memory
+        self.ifu._memoryIOController.memoryWriteAtAddressForLength(MEMORY_START_AT, 1, 0b00010000)
         instruction, nextInstructionAddress = self.ifu.fetchInstructionAtAddress(MEMORY_START_AT)
         self.assertIsNotNone(instruction.instructionCode)
         self.assertIsNotNone(instruction.sourceRegister)
@@ -83,47 +92,47 @@ class TestInstructionFetchUnit(unittest.TestCase):
         """
         Validates good working of the fetchInstructionFormAtAddress method for InstructionFetchUnit
         """
-        self.ifu._memoryArray.writeMemory(MEMORY_START_AT, [0xFF])
+        self.ifu._memoryIOController.memoryWriteAtAddressForLength(MEMORY_START_AT, 1, 0xFF)
         form = self.ifu._fetchInstructionFormAtAddress(MEMORY_START_AT)
         self.assertEqual(formDescription["Ins"], form)
 
-        self.ifu._memoryArray.writeMemory(MEMORY_START_AT, [0b01110000])
+        self.ifu._memoryIOController.memoryWriteAtAddressForLength(MEMORY_START_AT, 1, 0b01110000)
         form = self.ifu._fetchInstructionFormAtAddress(MEMORY_START_AT)
         self.assertEqual(formDescription["InsReg"], form)
 
-        self.ifu._memoryArray.writeMemory(MEMORY_START_AT, [0b10000000])
+        self.ifu._memoryIOController.memoryWriteAtAddressForLength(MEMORY_START_AT, 1, 0b10000000)
         form = self.ifu._fetchInstructionFormAtAddress(MEMORY_START_AT)
         self.assertEqual(formDescription["InsImm"], form)
 
-        self.ifu._memoryArray.writeMemory(MEMORY_START_AT, [0b01100000])
+        self.ifu._memoryIOController.memoryWriteAtAddressForLength(MEMORY_START_AT, 1, 0b01100000)
         form = self.ifu._fetchInstructionFormAtAddress(MEMORY_START_AT)
         self.assertEqual(formDescription["InsImmReg"], form)
 
-        self.ifu._memoryArray.writeMemory(MEMORY_START_AT, [0b00000000])
+        self.ifu._memoryIOController.memoryWriteAtAddressForLength(MEMORY_START_AT, 1, 0b00000000)
         form = self.ifu._fetchInstructionFormAtAddress(MEMORY_START_AT)
         self.assertEqual(formDescription["InsWidthImmReg"], form)
 
-        self.ifu._memoryArray.writeMemory(MEMORY_START_AT, [0b00010000])
+        self.ifu._memoryIOController.memoryWriteAtAddressForLength(MEMORY_START_AT, 1, 0b00010000)
         form = self.ifu._fetchInstructionFormAtAddress(MEMORY_START_AT)
         self.assertEqual(formDescription["InsWidthRegReg"], form)
 
-        self.ifu._memoryArray.writeMemory(MEMORY_START_AT, [0b00100000])
+        self.ifu._memoryIOController.memoryWriteAtAddressForLength(MEMORY_START_AT, 1, 0b00100000)
         form = self.ifu._fetchInstructionFormAtAddress(MEMORY_START_AT)
         self.assertEqual(formDescription["InsWidthRegImm"], form)
 
-        self.ifu._memoryArray.writeMemory(MEMORY_START_AT, [0b00110000])
+        self.ifu._memoryIOController.memoryWriteAtAddressForLength(MEMORY_START_AT, 1, 0b00110000)
         form = self.ifu._fetchInstructionFormAtAddress(MEMORY_START_AT)
         self.assertEqual(formDescription["InsWidthImmImm"], form)
 
-        self.ifu._memoryArray.writeMemory(MEMORY_START_AT, [0b01000000])
+        self.ifu._memoryIOController.memoryWriteAtAddressForLength(MEMORY_START_AT, 1, 0b01000000)
         form = self.ifu._fetchInstructionFormAtAddress(MEMORY_START_AT)
         self.assertEqual(formDescription["InsFlagImm"], form)
 
-        self.ifu._memoryArray.writeMemory(MEMORY_START_AT, [0b01010000])
+        self.ifu._memoryIOController.memoryWriteAtAddressForLength(MEMORY_START_AT, 1, 0b01010000)
         form = self.ifu._fetchInstructionFormAtAddress(MEMORY_START_AT)
         self.assertEqual(formDescription["InsFlagReg"], form)
 
-        self.ifu._memoryArray.writeMemory(MEMORY_START_AT, [0b10010000])
+        self.ifu._memoryIOController.memoryWriteAtAddressForLength(MEMORY_START_AT, 1, 0b10010000)
         form = self.ifu._fetchInstructionFormAtAddress(MEMORY_START_AT)
         self.assertEqual(formDescription["InsRegReg"], form)
 

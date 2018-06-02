@@ -49,7 +49,8 @@ formDescription = {
                     0b0011,   # PUSH
                     0b0100,   # POP
                     0b0101,   # SIVR
-                    0b0110],  # INT
+                    0b0110,   # INT
+                    0b0111],  # SVMR
         'description': {
             "instructionCode": 0b1111111100000000,
             "sourceRegister": 0b0000000011111111
