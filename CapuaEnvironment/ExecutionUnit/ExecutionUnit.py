@@ -1011,7 +1011,7 @@ class LogicUnit:
         :return:
         """
         # Proceed to access validation
-        accessLevel = self.eu.checkAccessLevel(available=[self.eu.S, self.eu.S - 4, self.eu.S - 7])
+        accessLevel = self.eu.checkAccessLevel(available=[self.eu.S, self.eu.S - 4])
 
         if accessLevel != ACCESS_GRANTED:
             # Can't run instruction! Access is not granted!
@@ -1044,7 +1044,7 @@ class LogicUnit:
         :return:
         """
         # Proceed to access validation
-        accessLevel = self.eu.checkAccessLevel(available=[self.eu.S, self.eu.S + 4, self.eu.S + 7])
+        accessLevel = self.eu.checkAccessLevel(available=[self.eu.S, self.eu.S + 4])
 
         if accessLevel != ACCESS_GRANTED:
             # Can't run instruction! Access is not granted!

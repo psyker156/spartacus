@@ -425,13 +425,13 @@ class Debugger:
             valueString = ""
             # Direct access to _value is to avoid memory protection elements
             if displayFormat == "bin":
-                valueString = bin(memSlice[i]._value)
+                valueString = bin(memSlice[i])
             if displayFormat == "hex":
-                valueString = hex(memSlice[i]._value)
+                valueString = hex(memSlice[i])
             if displayFormat == "dec":
-                valueString = str(memSlice[i]._value)
+                valueString = str(memSlice[i])
             if displayFormat == "char":
-                valueString = chr(memSlice[i]._value)
+                valueString = chr(memSlice[i])
 
             addressString = hex(address + i)
             self.debugLog("{} - {}".format(addressString, valueString,))
