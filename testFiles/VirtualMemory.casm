@@ -1,0 +1,111 @@
+; This simply helps testing virtual memory
+.global start
+
+start:
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+
+    mov start $s
+    mov #1024 $a
+    mov translationTable $b
+createTable:
+    memw [4] #0x0 $b
+    add #4 $b
+    sub #1 $a
+    cmp #0 $a
+    jmp <l> createTable
+
+; If here, base of the table has been created, can now proceed with identity mapping of the first 2 pages
+breakHere:
+    ; If you want to test that the mapping works, simply
+    ; remove the next line of code. That line does the
+    ; identity mapping where virtual address == physical address
+    memw [4] #0xe8001000 $b
+    mov translationTable $a
+    svmr $a
+    mov vector $a
+    sivr $a
+    mov #1 $a
+    mov #2 $b
+    mov #3 $c
+    memr [4] start $d
+here:
+    memr [4] #0x00030000 $a
+eternal:
+    nop
+    nop
+    jmp <> eternal
+
+clockHandler:                   ; All hardware interrupts are mapped to this empty handler
+keyboardHandler:
+hardDriveReadHandler:
+hardDriveWriteHandler:
+nullHandler:
+    HIRET
+
+badInstructionFetchHandler:
+    mov #1 $a
+    hiret
+noExecuteHandler:
+    mov #2 $a
+    hiret
+memoryNotAvailableHandler:
+    mov #3 $a
+    hiret
+accessDeniedHandler:
+    mov #4 $a
+    hiret
+divideByZeroHandler:
+    mov #5 $a
+    hiret
+
+
+vector:                         ; The vector is built using the dataMemRef marker
+.dataMemRef clockHandler
+.dataMemRef keyboardHandler
+.dataMemRef hardDriveReadHandler
+.dataMemRef hardDriveWriteHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef badInstructionFetchHandler
+.dataMemRef noExecuteHandler
+.dataMemRef memoryNotAvailableHandler
+.dataMemRef accessDeniedHandler
+.dataMemRef divideByZeroHandler
+
+
+
+
+
+translationTable:

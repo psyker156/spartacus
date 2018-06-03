@@ -1,0 +1,64 @@
+.global start:
+
+start:
+MOV end $S                      ; Stack grows up, setting S to the end is generally safer
+                                ; The stack needs to be configure for interrupt handling to work
+MOV vector $A
+SIVR $A                         ; Set the interrupt vector to "vector"
+ACTI                            ; Interrupt handling activation
+
+.dataNumeric 0xB1414141         ; Forcing a bad fetch exception
+
+loop:
+    NOP
+    JMP <> loop
+
+clockHandler:                   ; All hardware interrupts are mapped to this empty handler
+keyboardHandler:
+hardDriveReadHandler:
+hardDriveWriteHandler:
+nullHandler:
+    HIRET
+
+badInstructionFetchHandler:
+    mov #1 $a
+    mov #2 $b
+    mov #3 $c
+
+
+vector:                         ; The vector is built using the dataMemRef marker
+.dataMemRef clockHandler
+.dataMemRef keyboardHandler
+.dataMemRef hardDriveReadHandler
+.dataMemRef hardDriveWriteHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef nullHandler
+.dataMemRef badInstructionFetchHandler
+
+end:
