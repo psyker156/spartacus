@@ -402,14 +402,14 @@ class ExecutionUnit:
         :return: int, the access level, = to ACCESS_GRANTED if so
         """
         # Proceed to access validation
-        accessLevel = self.mioc.virtualMemoryManager.validateAccessRequirements(self.currentPrivilegeLevel,
-                                                                                execute=execute,
-                                                                                available=available,
-                                                                                vmr=self.VMR)
+        accessLevel, eAddress = self.mioc.virtualMemoryManager.validateAccessRequirements(self.currentPrivilegeLevel,
+                                                                                          execute=execute,
+                                                                                          available=available,
+                                                                                          vmr=self.VMR)
         if signal and accessLevel != ACCESS_GRANTED:
             # Need to signal exception
             self.signalHardwareException(interruptNumber=accessLevel,
-                                         exceptionCode=0,
+                                         exceptionCode=eAddress,
                                          faultyInstruction=self.previousI)
         return accessLevel
 

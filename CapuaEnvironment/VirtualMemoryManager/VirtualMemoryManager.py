@@ -178,10 +178,11 @@ class VirtualMemoryManager:
         :param available: list of ints, list of addresses requiring general access (no need to repeat execute here)
         :param vmr: int, the address of the translation table to be used
         :return: int, an exception code > 0 indicating an exception (in priority) if 1 access is not validated
+        :return: int, the address causing the access error or 0
         """
         if vmr == 0:
             # No VMR set all access granted
-            return ACCESS_GRANTED
+            return ACCESS_GRANTED, ACCESS_GRANTED
 
         allEntries = []
 
@@ -191,7 +192,7 @@ class VirtualMemoryManager:
             accessible = ttEntry & VIRTUAL_EXECUTABLE_FLAG
 
             if not accessible:
-                return EXCEPTION_NO_EXECUTE_PERMISSION
+                return EXCEPTION_NO_EXECUTE_PERMISSION, address
             allEntries.append(ttEntry)
 
         # Then availability
@@ -201,17 +202,17 @@ class VirtualMemoryManager:
             accessible = ttEntry & VIRTUAL_AVAILABLE_FLAG
 
             if not accessible:
-                return EXCEPTION_PAGE_NOT_AVAILABLE
+                return EXCEPTION_PAGE_NOT_AVAILABLE, address
             allEntries.append(ttEntry)
 
         # Last priority is privileged access
         for ttEntry in allEntries:
             privilegedIsRequired = ttEntry & VIRTUAL_PRIVILEGED_FLAG
             if privilegedIsRequired and not privileged:
-                return EXCEPTION_MEMORY_ACCESS_DENIED
+                return EXCEPTION_MEMORY_ACCESS_DENIED, address
 
         # If we are here, access is granted!
-        return ACCESS_GRANTED
+        return ACCESS_GRANTED, ACCESS_GRANTED
 
     def ttEntryIsExecutable(self, ttEntry):
         """

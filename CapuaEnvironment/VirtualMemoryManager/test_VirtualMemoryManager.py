@@ -203,29 +203,37 @@ class TestVirtualMemoryManager(unittest.TestCase):
         self.vmm.ma.writeMemory(MEMORY_START_AT + 8,
                                 [(0x08 | (0b101 << 5)), 0x04])     # Set as execute + available
 
-        accessLevel = self.vmm.validateAccessRequirements(True, [0x80000, 0x80004], [], MEMORY_START_AT)
+        accessLevel, eAddress = self.vmm.validateAccessRequirements(True, [0x80000, 0x80004], [], MEMORY_START_AT)
         self.assertEqual(EXCEPTION_PAGE_NOT_AVAILABLE, accessLevel)
+        self.assertNotEqual(ACCESS_GRANTED, eAddress)
 
-        accessLevel = self.vmm.validateAccessRequirements(True, [0x100000, 0x100004], [0x1000FF], MEMORY_START_AT)
+        accessLevel, eAddress = self.vmm.validateAccessRequirements(True, [0x100000, 0x100004], [0x1000FF], MEMORY_START_AT)
         self.assertEqual(ACCESS_GRANTED, accessLevel)
+        self.assertEqual(ACCESS_GRANTED, eAddress)
 
-        accessLevel = self.vmm.validateAccessRequirements(False, [0x100000, 0x100004], [0x1000FF], MEMORY_START_AT)
+        accessLevel, eAddress = self.vmm.validateAccessRequirements(False, [0x100000, 0x100004], [0x1000FF], MEMORY_START_AT)
         self.assertEqual(EXCEPTION_MEMORY_ACCESS_DENIED, accessLevel)
+        self.assertNotEqual(ACCESS_GRANTED, eAddress)
 
-        accessLevel = self.vmm.validateAccessRequirements(True, [], [0x1000FF], MEMORY_START_AT)
+        accessLevel, eAddress = self.vmm.validateAccessRequirements(True, [], [0x1000FF], MEMORY_START_AT)
         self.assertEqual(ACCESS_GRANTED, accessLevel)
+        self.assertEqual(ACCESS_GRANTED, eAddress)
 
-        accessLevel = self.vmm.validateAccessRequirements(False, [], [0x1000FF], MEMORY_START_AT)
+        accessLevel, eAddress = self.vmm.validateAccessRequirements(False, [], [0x1000FF], MEMORY_START_AT)
         self.assertEqual(EXCEPTION_MEMORY_ACCESS_DENIED, accessLevel)
+        self.assertNotEqual(ACCESS_GRANTED, eAddress)
 
-        accessLevel = self.vmm.validateAccessRequirements(False, [0x200000, 0x200004], [0x2000FF], MEMORY_START_AT)
+        accessLevel, eAddress = self.vmm.validateAccessRequirements(False, [0x200000, 0x200004], [0x2000FF], MEMORY_START_AT)
         self.assertEqual(ACCESS_GRANTED, accessLevel)
+        self.assertEqual(ACCESS_GRANTED, eAddress)
 
-        accessLevel = self.vmm.validateAccessRequirements(True, [], [0x2000FF], MEMORY_START_AT)
+        accessLevel, eAddress = self.vmm.validateAccessRequirements(True, [], [0x2000FF], MEMORY_START_AT)
         self.assertEqual(ACCESS_GRANTED, accessLevel)
+        self.assertEqual(ACCESS_GRANTED, eAddress)
 
-        accessLevel = self.vmm.validateAccessRequirements(False, [], [0x2000FF], MEMORY_START_AT)
+        accessLevel, eAddress = self.vmm.validateAccessRequirements(False, [], [0x2000FF], MEMORY_START_AT)
         self.assertEqual(ACCESS_GRANTED, accessLevel)
+        self.assertEqual(ACCESS_GRANTED, eAddress)
 
 
 
