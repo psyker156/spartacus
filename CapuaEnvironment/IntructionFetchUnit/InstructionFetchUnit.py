@@ -27,7 +27,9 @@ from Configuration.Configuration import MEMORY_START_AT, \
                                         MEMORY_MAXIMUM_READ_WRITE_SIZE, \
                                         VIRTUAL_NULL, \
                                         EXCEPTION_BAD_INSTRUCTION_FETCH, \
-                                        EXCEPTION_NO_EXECUTE_PERMISSION
+                                        EXCEPTION_NO_EXECUTE_PERMISSION, \
+                                        EXCEPTION_MEMORY_ACCESS_DENIED, \
+                                        EXCEPTION_PAGE_NOT_AVAILABLE
 
 __author__ = "CSE"
 __copyright__ = "Copyright 2015, CSE"
@@ -74,17 +76,33 @@ class InstructionFetchUnit:
 
         instruction = None
         nextInstructionAddress = None
-        accessGranted = True
+        executeAccessGranted = True
+        isPrivileged = False
+        isAvailable = True
 
         # First thing, do we have execute access at the given address?
         if vmr != VIRTUAL_NULL:
             ttEntry = self._memoryIOController.virtualMemoryManager.getTTEntryForAddress(address, vmr)
-            accessGranted = self._memoryIOController.virtualMemoryManager.ttEntryIsExecutable(ttEntry)
+            executeAccessGranted = self._memoryIOController.virtualMemoryManager.ttEntryIsExecutable(ttEntry)
+            isPrivileged = self._memoryIOController.virtualMemoryManager.ttEntryIsPriviledged(ttEntry)
+            isAvailable = self._memoryIOController.virtualMemoryManager.ttEntryIsAvailable(ttEntry)
 
-        if not accessGranted:
+        if not executeAccessGranted:
             # an illegal memory access just happened!
             self._eu.signalHardwareException(interruptNumber=EXCEPTION_NO_EXECUTE_PERMISSION,
-                                             exceptionCode=0,
+                                             exceptionCode=self._eu.I,
+                                             faultyInstruction=self._eu.I)
+
+        if isPrivileged and not self._eu.currentPrivilegeLevel:
+            # we are about to fetch from a privileged part of memory while we are not privileged
+            self._eu.signalHardwareException(interruptNumber=EXCEPTION_MEMORY_ACCESS_DENIED,
+                                             exceptionCode=self._eu.I,
+                                             faultyInstruction=self._eu.I)
+
+        if not isAvailable:
+            # we are about to fetch an instruction in a page that is not loaded in memory
+            self._eu.signalHardwareException(interruptNumber=EXCEPTION_PAGE_NOT_AVAILABLE,
+                                             exceptionCode=self._eu.I,
                                              faultyInstruction=self._eu.I)
 
         # Execute access granted, fetch the instruction!

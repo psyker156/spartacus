@@ -45,7 +45,8 @@ from Configuration.Configuration import REGISTER_A, \
                                         VIRTUAL_NULL, \
                                         ACCESS_GRANTED, \
                                         EXCEPTION_BAD_INSTRUCTION_FETCH, \
-                                        EXCEPTION_DIVIDE_BY_ZERO
+                                        EXCEPTION_DIVIDE_BY_ZERO, \
+                                        EXCEPTION_EXECUTION_PRIVILEGE_VIOLATION
 
 import threading
 
@@ -492,6 +493,15 @@ class LogicUnit:
         This activates the interrupts for the current ExecutionUnit
         :return: 0, resets the flags
         """
+
+        # This is a privileged instruction, need to run access check
+        if not self.eu.currentPrivilegeLevel:
+            # User is running a privileged instruction from user mode!
+            self.eu.signalHardwareException(interruptNumber=EXCEPTION_EXECUTION_PRIVILEGE_VIOLATION,
+                                            exceptionCode=self.eu.previousI,
+                                            faultyInstruction=self.eu.previousI)
+            return self.eu.FLAGS
+
         self.eu.interruptSignalLock.acquire()
         self.eu.IS = 0b1
         self.eu.interruptSignalLock.release()
@@ -623,6 +633,14 @@ class LogicUnit:
         This deactivates the interrupts for the current ExecutionUnit
         :return: 0, resets the flags
         """
+        # This is a privileged instruction, need to run access check
+        if not self.eu.currentPrivilegeLevel:
+            # User is running a privileged instruction from user mode!
+            self.eu.signalHardwareException(interruptNumber=EXCEPTION_EXECUTION_PRIVILEGE_VIOLATION,
+                                            exceptionCode=self.eu.previousI,
+                                            faultyInstruction=self.eu.previousI)
+            return self.eu.FLAGS
+
         self.eu.interruptSignalLock.acquire()
         self.eu.IS = 0b0
         self.eu.interruptSignalLock.release()
@@ -663,6 +681,14 @@ class LogicUnit:
         :return: 0, this method does not affect the flags register
         """
 
+        # This is a privileged instruction, need to run access check
+        if not self.eu.currentPrivilegeLevel:
+            # User is running a privileged instruction from user mode!
+            self.eu.signalHardwareException(interruptNumber=EXCEPTION_EXECUTION_PRIVILEGE_VIOLATION,
+                                            exceptionCode=self.eu.previousI,
+                                            faultyInstruction=self.eu.previousI)
+            return self.eu.FLAGS
+
         # Proceed to access validation
         accessLevel = self.eu.checkAccessLevel(available=[self.eu.S, self.eu.S - 4])
 
@@ -679,6 +705,18 @@ class LogicUnit:
         returnAddress = self.eu.A
         self.executeInstruction(popInstruction, hardware=True)
         flagsToBeRestored = self.eu.A
+
+        # If return address is in user mode we need to lower privilege
+        # if we were previously running in kernel mode.
+        if self.eu.VMR != VIRTUAL_NULL and self.eu.currentPrivilegeLevel:
+            # if we're here, we are currently running in kernel mode and
+            # memory translation is active.
+            ttEntry = self.eu.mioc.virtualMemoryManager.getTTEntryForAddress(virtualAddress=returnAddress,
+                                                                             vmr=self.eu.VMR)
+            privileged = self.eu.mioc.virtualMemoryManager.ttEntryIsPriviledged(ttEntry=ttEntry)
+            if not privileged:
+                # going into user space execution
+                self.eu.currentPrivilegeLevel = False
 
         self.eu.A = oldAValue
         self.eu.I = returnAddress
@@ -706,6 +744,9 @@ class LogicUnit:
         :param: bool, optional, hardware, This indicates if the interrupt has been hardware generated
         :return:
         """
+
+        # Interrupts are handled in privileged mode
+        self.eu.currentPrivilegeLevel = True
 
         # Proceed to access validation
         # todo access validation is not complete here!
@@ -1096,6 +1137,18 @@ class LogicUnit:
         stackPointer = self.eu.S - 4  # Stack grows upward!!!
         self.eu.S = stackPointer
 
+        # If return address is in user mode we need to lower privilege
+        # if we were previously running in kernel mode.
+        if self.eu.VMR != VIRTUAL_NULL and self.eu.currentPrivilegeLevel:
+            # if we're here, we are currently running in kernel mode and
+            # memory translation is active.
+            ttEntry = self.eu.mioc.virtualMemoryManager.getTTEntryForAddress(virtualAddress=stackPointer,
+                                                                             vmr=self.eu.VMR)
+            privileged = self.eu.mioc.virtualMemoryManager.ttEntryIsPriviledged(ttEntry=ttEntry)
+            if not privileged:
+                # going into user space execution
+                self.eu.currentPrivilegeLevel = False
+
         # Adjust next instruction pointer
         self.eu.I = topStackValue
 
@@ -1219,6 +1272,14 @@ class LogicUnit:
         SIVR sReg
         :return: 0, resets the flags
         """
+        # This is a privileged instruction, need to run access check
+        if not self.eu.currentPrivilegeLevel:
+            # User is running a privileged instruction from user mode!
+            self.eu.signalHardwareException(interruptNumber=EXCEPTION_EXECUTION_PRIVILEGE_VIOLATION,
+                                            exceptionCode=self.eu.previousI,
+                                            faultyInstruction=self.eu.previousI)
+            return self.eu.FLAGS
+
         sourceValue = self.eu.getRegisterValue(registerCode=self.ci.sourceRegister)
         sourceValue &= 0xFFFFFFFF
         self.eu.IVR = sourceValue
@@ -1261,6 +1322,14 @@ class LogicUnit:
         SVMR sReg
         :return: 0, resets the flags
         """
+        # This is a privileged instruction, need to run access check
+        if not self.eu.currentPrivilegeLevel:
+            # User is running a privileged instruction from user mode!
+            self.eu.signalHardwareException(interruptNumber=EXCEPTION_EXECUTION_PRIVILEGE_VIOLATION,
+                                            exceptionCode=self.eu.previousI,
+                                            faultyInstruction=self.eu.previousI)
+            return self.eu.FLAGS
+
         sourceValue = self.eu.getRegisterValue(registerCode=self.ci.sourceRegister)
         sourceValue &= 0xFFFFFFFF
         self.eu.VMR = sourceValue
